@@ -4,7 +4,7 @@ from django.db import models
 
 class MarriedManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().filter(user_sent__isapproved=True)
+        return super().get_queryset().filter(user_sent__is_approved=True)
 
 
 class User(AbstractUser):
