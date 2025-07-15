@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 
 
@@ -17,9 +17,12 @@ class User(AbstractUser):
         choices=tuple(map(lambda x: (bool(x[0]), x[1]), Gender.choices)),
         default=None, blank=True
     )
+    first_name = models.CharField(max_length=150, blank=False, null=False)
     
-    objects = models.Manager()
+    objects = UserManager()
     married = MarriedManager()
+
+    REQUIRED_FIELDS = ['gender', 'first_name']
 
     def __str__(self):
         return self.username

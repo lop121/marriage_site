@@ -6,8 +6,30 @@
 </head>
 <body>
 
+{% block mainmenu %}
+{% if user.is_authenticated %}
+	<li style="float: right">
+		<a href="{% url 'profile' %}"> {{ user.first_name }} </a> |
+    <a href="#" onclick="document.getElementById('logoutForm').submit(); return false;">
+        Log Out
+    </a>
+</li>
+{% else %}
+	<li style="float: right"><a href="{% url 'login' %}"> Log In </a> | <a href="{% url 'register' %}">Sign In</a>
+	</li>
+{% endif %}
+			</ul>
+			<div class="clear"></div>
+		</div>
+{% endblock %}
+
 {% block content %}
 {% endblock %}
+
+<form id="logoutForm" method="post" action="{% url 'logout' %}" style="display:none;">
+    {% csrf_token %}
+</form>
+
 
 </body>
 </html>
