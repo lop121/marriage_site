@@ -4,7 +4,7 @@ from django.db import models
 
 class MarriedManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().filter(user_sent__is_approved=True)
+        return super().get_queryset().filter(user_sender__is_approved=True)
 
 
 class User(AbstractUser):
@@ -22,16 +22,21 @@ class User(AbstractUser):
     objects = UserManager()
     married = MarriedManager()
 
-    REQUIRED_FIELDS = ['gender', 'first_name']
+    REQUIRED_FIELDS = ['email', 'gender', 'first_name']
 
     def __str__(self):
         return self.username
 
 
 class Marriage(models.Model):
-    user1 = models.OneToOneField('User', on_delete=models.CASCADE, null=True, blank=True, related_name='user_sent')
-    user2 = models.OneToOneField('User', on_delete=models.CASCADE, null=True, blank=True, related_name='user_get')
+    sender = models.OneToOneField('User', on_delete=models.CASCADE, null=True, blank=True, related_name='user_sender')
+    receiver = models.OneToOneField('User', on_delete=models.CASCADE, null=True, blank=True,
+                                   related_name='user_receiver')
 
     is_approved = models.BooleanField(default=False, verbose_name='Approved')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [('sender', 'receiver')]

@@ -1,10 +1,15 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth.views import LoginView
 from django.shortcuts import render
 from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView
+from rest_framework.generics import UpdateAPIView, CreateAPIView, ListCreateAPIView
+from rest_framework.renderers import TemplateHTMLRenderer
+from rest_framework.views import APIView
 
 from users.forms import LoginUserForm, RegisterUserForm
-from users.models import User
+from users.models import User, Marriage
+from users.serializers import MarriageSerializers
 
 
 class HomePage(ListView):
@@ -28,4 +33,13 @@ class RegistrationUser(CreateView):
     success_url = reverse_lazy('login')
 
 class UserProfile(UpdateView):
+    pass
+
+class ProposalAPI(ListCreateAPIView):
+    queryset = Marriage.objects.all()
+    serializer_class = MarriageSerializers
+
+class ProposalHTML(ProposalAPI):
+    # renderer_classes = [TemplateHTMLRenderer]
+    # template_name = 'users/index.html'
     pass
