@@ -4,15 +4,15 @@ from rest_framework import serializers
 from rest_framework.fields import HiddenField, CharField
 from rest_framework.serializers import ModelSerializer
 
-from users.models import Marriage, User
+from users.models import Marriage, User, MarriageProposals
 
 
 class MarriageSerializers(ModelSerializer):
     receiver_username = serializers.CharField(write_only=True)
 
     class Meta:
-        model = Marriage
-        fields = ['receiver_username',  'is_approved']
+        model = MarriageProposals
+        fields = ['receiver_username',  'status']
 
     def validate_receiver_username(self, value):
         if not User.objects.filter(username=value).exists():
@@ -24,11 +24,11 @@ class MarriageSerializers(ModelSerializer):
         receiver = User.objects.get(username=receiver_username)
         sender = self.context['request'].user
 
-        if Marriage.objects.filter(sender=sender, receiver=receiver).exists():
+        if MarriageProposals.objects.filter(sender=sender).exists():
             raise serializers.ValidationError("You have already sent an offer")
 
         if sender == receiver:
             raise serializers.ValidationError("You can't send it to yourself")
 
-        return Marriage.objects.create(sender=sender, receiver=receiver, **validated_data)
+        return MarriageProposals.objects.create(sender=sender, receiver=receiver, **validated_data)
 

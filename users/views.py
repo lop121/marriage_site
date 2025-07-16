@@ -1,14 +1,15 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.views import LoginView
-from django.shortcuts import render
-from django.urls import reverse_lazy
+from django.shortcuts import render, redirect
+from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, CreateView, UpdateView
 from rest_framework.generics import UpdateAPIView, CreateAPIView, ListCreateAPIView
 from rest_framework.renderers import TemplateHTMLRenderer
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from users.forms import LoginUserForm, RegisterUserForm
-from users.models import User, Marriage
+from users.models import User, Marriage, MarriageProposals
 from users.serializers import MarriageSerializers
 
 
@@ -25,6 +26,7 @@ class LoginUser(LoginView):
     form_class = LoginUserForm
     template_name = 'users/login.html'
     extra_context = {'title': 'Log In'}
+    success_url = 'home'
 
 class RegistrationUser(CreateView):
     form_class = RegisterUserForm
@@ -36,10 +38,20 @@ class UserProfile(UpdateView):
     pass
 
 class ProposalAPI(ListCreateAPIView):
-    queryset = Marriage.objects.all()
+    queryset = MarriageProposals.objects.all()
     serializer_class = MarriageSerializers
 
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        if request.accepted_renderer.format == 'html':
+            return redirect(reverse('proposal'))
+        return response
+
 class ProposalHTML(ProposalAPI):
-    # renderer_classes = [TemplateHTMLRenderer]
-    # template_name = 'users/index.html'
-    pass
+    renderer_classes = [TemplateHTMLRenderer]
+    template_name = 'users/proposal.html'
+
+
+    def get(self, request, *args, **kwargs):
+        return Response({'proposals': self.get_queryset()})

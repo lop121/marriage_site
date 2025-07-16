@@ -26,6 +26,9 @@
 {% block content %}
 {% endblock %}
 
+{% block information %}
+{% endblock %}
+
 <form id="logoutForm" method="post" action="{% url 'logout' %}" style="display:none;">
     {% csrf_token %}
 </form>
