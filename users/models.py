@@ -78,3 +78,4 @@ class MarriageProposals(models.Model):
         if self.receiver:
             return self.receiver.get_full_name() or self.receiver.username
         return self.receiver_fullname or "Not found, shma"
+

@@ -47,7 +47,8 @@ class ProposalAPI(ListCreateAPIView):
 
         if (request.accepted_renderer.format == 'html' and
                 response.status_code == status.HTTP_201_CREATED):
-            return redirect(reverse('proposal'))
+            proposal_type = request.GET.get('type', 'registered') or request.POST.get('type', 'registered')
+            return redirect(f"{reverse('proposal')}?type={proposal_type}")
         return response
 
 class ProposalHTML(ProposalAPI):
@@ -59,5 +60,6 @@ class ProposalHTML(ProposalAPI):
         is_for_registered = request.GET.get('type') != 'unregistered'
         return Response({
             'proposals': self.get_queryset(),
-            'is_for_registered': is_for_registered
+            'is_for_registered': is_for_registered,
+            'request': request
         })
