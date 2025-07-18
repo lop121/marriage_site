@@ -3,6 +3,7 @@ from django.contrib.auth.views import LoginView
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, CreateView, UpdateView
+from rest_framework import status
 from rest_framework.generics import UpdateAPIView, CreateAPIView, ListCreateAPIView
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
@@ -44,7 +45,8 @@ class ProposalAPI(ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
 
-        if request.accepted_renderer.format == 'html':
+        if (request.accepted_renderer.format == 'html' and
+                response.status_code == status.HTTP_201_CREATED):
             return redirect(reverse('proposal'))
         return response
 
@@ -54,4 +56,8 @@ class ProposalHTML(ProposalAPI):
 
 
     def get(self, request, *args, **kwargs):
-        return Response({'proposals': self.get_queryset()})
+        is_for_registered = request.GET.get('type') != 'unregistered'
+        return Response({
+            'proposals': self.get_queryset(),
+            'is_for_registered': is_for_registered
+        })

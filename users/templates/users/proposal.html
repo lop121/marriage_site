@@ -3,7 +3,20 @@
 {% block content %}
 <form method="post" action="">
     {% csrf_token %}
-    <input type="text" name="receiver_username" required>
+
+    {% if is_for_registered %}
+      <label>Username (login):</label>
+        <input type="text" name="receiver_username" required>
+    {% else %}
+        <label>First name:</label>
+        <input type="text" name="first_name" required>
+
+        <label>Last name:</label>
+        <input type="text" name="last_name" required>
+
+    {% endif %}
+
+    <input type="hidden" name="status" value="-1">
     <button type="submit">Send proposal</button>
 </form>
 {% endblock %}
@@ -14,10 +27,10 @@
 <hr>
     {% for proposal in proposals %}
         {% if proposal.status == 1 %}
-            <li>{{ proposal.sender }} + {{ proposal.receiver }} = ❤️</li>
+            <li>{{ proposal.sender }} + {{ proposal.display_receiver }} = ❤️</li>
             <p>Status: Approved</p>
         {% elif proposal.status == -1 %}
-            <li>{{ proposal.sender }} + {{ proposal.receiver }} = 🤔</li>
+            <li>{{ proposal.sender }} + {{ proposal.display_receiver }} = 🤔</li>
             <p>Status: Not Approved</p>
         {% endif %}
     {% endfor %}
