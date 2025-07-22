@@ -1,3 +1,4 @@
+from django.db import models
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
@@ -66,4 +67,56 @@ class MarriageSerializers(ModelSerializer):
             status=validated_data.get('status', MarriageProposals.Status.WAITING)
         )
 
+class OffersSerializers(ModelSerializer):
+    class Meta:
+        model = MarriageProposals
+        fields = '__all__'
+        read_only_fields = ('sender', 'receiver', 'created_at')
+
+    def update(self, instance, validated_data):
+        if (instance.status == MarriageProposals.Status.WAITING and validated_data.get('status') ==
+                MarriageProposals.Status.COMPLETE):
+            if instance.sender.gender == User.Gender.MAN:
+                Marriage.objects.create(
+                    husband=instance.sender,
+                    wife=instance.receiver,
+                )
+            else:
+                Marriage.objects.create(
+                    husband=instance.receiver,
+                    wife=instance.sender,
+                )
+
+            instance.sender.is_married = True
+            instance.receiver.is_married = True
+            instance.sender.save()
+            instance.receiver.save()
+
+            MarriageProposals.objects.filter(
+                models.Q(sender=instance.sender) |
+                models.Q(sender=instance.receiver) |
+                models.Q(receiver=instance.sender) |
+                models.Q(receiver=instance.receiver),
+                status=MarriageProposals.Status.WAITING
+            ).exclude(id=instance.id).update(status=MarriageProposals.Status.CANCELED)
+
+        return super().update(instance,validated_data)
+
+    def validate_status(self, value):
+        if value == MarriageProposals.Status.COMPLETE:
+            instance = self.instance
+
+            # Отправитель не женат
+            if instance.sender.is_married:
+                raise serializers.ValidationError("Отправитель уже в браке")
+
+            # Получатель не женат
+            if instance.receiver.is_married:
+                raise serializers.ValidationError("Получатель уже в браке")
+
+            # Заявка ещё не обработана
+            if instance.status != MarriageProposals.Status.WAITING:
+                raise serializers.ValidationError("Заявка уже обработана")
+
+        return value
 

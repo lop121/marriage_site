@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% for offer in offers %}
+<div class="offer">
+    <h3>Заявка #{{ offer.id }}</h3>
+    <p>От: {{ offer.sender.username }}</p>
+
+    <button class="accept-btn" data-offer-id="{{ offer.id }}">Accept</button>
+    <button class="reject-btn" data-offer-id="{{ offer.id }}">Cancel</button>
+
+</div>
+{% endfor %}
+
+<script>
+document.querySelectorAll('.accept-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const offerId = this.dataset.offerId;
+        updateOfferStatus(offerId, 1);
+    });
+});
+
+document.querySelectorAll('.reject-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const offerId = this.dataset.offerId;
+        updateOfferStatus(offerId, 0);
+    });
+});
+
+function updateOfferStatus(offerId, status) {
+    fetch(`${offerId}/`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => {
+        if (response.ok) {
+            alert('Статус обновлен!');
+            location.reload();  // Перезагружаем страницу
+        } else {
+            alert('Ошибка обновления');
+        }
+    })
+    .catch(error => console.error('Ошибка:', error));
+}
+</script>
+{% endblock %}

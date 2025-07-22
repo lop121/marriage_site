@@ -1,17 +1,18 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.views import LoginView
 from django.shortcuts import render, redirect
+from django.template.context_processors import request
 from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, CreateView, UpdateView
-from rest_framework import status
-from rest_framework.generics import UpdateAPIView, CreateAPIView, ListCreateAPIView
+from rest_framework import status, mixins, generics
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.generics import ListCreateAPIView
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from users.forms import LoginUserForm, RegisterUserForm
 from users.models import User, Marriage, MarriageProposals
-from users.serializers import MarriageSerializers
+from users.serializers import MarriageSerializers, OffersSerializers
 
 
 class HomePage(ListView):
@@ -61,5 +62,44 @@ class ProposalHTML(ProposalAPI):
         return Response({
             'proposals': self.get_queryset(),
             'is_for_registered': is_for_registered,
+            'request': request
+        })
+
+class OffersAPI(
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.ListModelMixin,
+    generics.GenericAPIView
+):
+
+    serializer_class = OffersSerializers
+
+    def get_queryset(self):
+        return MarriageProposals.objects.filter(
+            receiver=self.request.user,
+            status=MarriageProposals.Status.WAITING)
+
+    def get(self, request, *args, **kwargs):
+        if 'pk' in kwargs:
+            return self.retrieve(request, *args, **kwargs)
+        return self.list(request, *args, **kwargs)
+
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        if serializer.instance.receiver != self.request.user:
+            raise PermissionDenied("You don't update this offer!")
+        serializer.save()
+
+class OffersHTML(OffersAPI):
+    renderer_classes = [TemplateHTMLRenderer]
+    template_name = 'users/offers.html'
+
+
+    def get(self, request, *args, **kwargs):
+        return Response({
+            'offers': self.get_queryset(),
             'request': request
         })
