@@ -26,6 +26,15 @@ class User(AbstractUser):
 
     REQUIRED_FIELDS = ['email', 'gender', 'first_name', 'last_name']
 
+    @property
+    def partner(self):
+        marriage = Marriage.objects.filter(
+            models.Q(husband=self) | models.Q(wife=self)
+        ).first()
+        if marriage:
+            return marriage.display_partner(self)
+        return None
+
     def __str__(self):
         return self.username
 
@@ -39,6 +48,15 @@ class Marriage(models.Model):
 
     class Meta:
         unique_together = [('husband', 'wife')]
+
+    def display_partner(self, user):
+        if user == self.husband:
+            return self.wife.get_full_name() or self.wife.username
+        elif user == self.wife:
+            return self.husband.get_full_name() or self.husband.username
+        return None
+
+
 
     def __str__(self):
         return f'{self.husband} + {self.wife}'

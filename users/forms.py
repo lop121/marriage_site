@@ -1,3 +1,5 @@
+from datetime import date
+
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
@@ -40,4 +42,16 @@ class RegisterUserForm(UserCreationForm):
             raise forms.ValidationError("This email has already been registered")
         return email
 
+class ProfileUserForm(forms.ModelForm):
+    username = forms.CharField(label='Login',
+                               widget=forms.TextInput(attrs={'class': 'form-input'}), disabled=True)
+    email = forms.CharField(label='E-mail',
+                            widget=forms.TextInput(attrs={'class': 'form-input'}), disabled=True)
+    this_year = date.today().year
+    data_birth = forms.DateField(widget=forms.SelectDateWidget(years=tuple(range(this_year - 100, this_year - 18))))
+    is_married = forms.BooleanField(label='Married', disabled=True)
+
+    class Meta:
+        model = get_user_model()
+        fields = ['username', 'email', 'first_name', 'last_name', 'data_birth', 'is_married']
 

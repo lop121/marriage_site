@@ -119,4 +119,3 @@ class OffersSerializers(ModelSerializer):
                 raise serializers.ValidationError("Заявка уже обработана")
 
         return value
-

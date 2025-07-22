@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Profile</h1>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+{#    {% if user.photo %}#}
+{#    <p><img src="{{ user.photo.url }}"></p>#}
+{#    {% else %}#}
+{#    <p><img src="/media/users/default.png"></p>#}
+{#    {% endif %}#}
+
+    <input type="hidden" name="next" value="{{ next }}"/>
+    <div class="form-error">{{form.non_field_errors}}</div>
+    {% for f in form %}
+    <p><label class="form-label" for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}</p>
+    <div class="form-error">{{ f.errors }}</div>
+    {% endfor %}
+
+    <p>
+        <button type="submit">Save</button>
+    </p>
+</form>
+
+{% if is_married %}
+    <p>Your Partner - {{ partner_name }}</p>
+
+    <button id="initiateDivorceBtn" class="divorce-btn">Divorce</button>
+
+    <div id="confirmationBlock" style="display: none; margin-top: 10px;">
+        <p>Are you sure you want to divorce {{ partner_name }}?</p>
+        <button id="confirmDivorceBtn" class="confirm-btn" style="background: #ff6a6a;">Yes</button>
+        <button id="cancelDivorceBtn" class="confirm-btn" style="background: #7d8891;">No</button>
+    </div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const initiateBtn = document.getElementById('initiateDivorceBtn');
+    const confirmationBlock = document.getElementById('confirmationBlock');
+    const confirmBtn = document.getElementById('confirmDivorceBtn');
+    const cancelBtn = document.getElementById('cancelDivorceBtn');
+
+    // Показываем/скрываем блок подтверждения
+    if (initiateBtn && confirmationBlock) {
+        initiateBtn.addEventListener('click', function() {
+            initiateBtn.style.display = 'none';
+            confirmationBlock.style.display = 'block';
+        });
+    }
+
+    // Обработка отмены
+    if (cancelBtn && initiateBtn && confirmationBlock) {
+        cancelBtn.addEventListener('click', function() {
+            initiateBtn.style.display = 'inline-block';
+            confirmationBlock.style.display = 'none';
+        });
+    }
+
+    // Обработка подтверждения развода
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', async function() {
+            try {
+                const response = await fetch("{% url 'divorce' %}", {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    window.location.href = "{% url 'profile' %}";  // Редирект после успеха
+                } else {
+                    const errorData = await response.json();
+                    alert("Error: " + (errorData.detail || "Failed to process divorce"));
+                    // Возвращаем интерфейс в исходное состояние
+                    if (initiateBtn && confirmationBlock) {
+                        initiateBtn.style.display = 'inline-block';
+                        confirmationBlock.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                alert("Request failed: " + error);
+                if (initiateBtn && confirmationBlock) {
+                    initiateBtn.style.display = 'inline-block';
+                    confirmationBlock.style.display = 'none';
+                }
+            }
+        });
+    }
+});
+</script>
+
+{% endblock %}
+
+
