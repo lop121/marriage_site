@@ -81,9 +81,6 @@ class MarriageProposals(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        unique_together = [('sender', 'receiver'), ('sender', 'receiver_fullname')]
-
     def __str__(self):
         return f'{self.sender} -> {self.receiver}'
 

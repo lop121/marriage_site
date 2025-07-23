@@ -79,7 +79,7 @@ class ProposalHTML(ProposalAPI):
         return Response({
             'proposals': self.get_queryset(),
             'is_for_registered': is_for_registered,
-            'request': request
+            'request': request,
         })
 
 class OffersAPI(

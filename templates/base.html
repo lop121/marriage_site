@@ -28,6 +28,16 @@
 {% endblock %}
 
 {% block information %}
+<ul>
+<h1>Молодожены нашего сайта!</h1>
+<hr>
+    {% for proposal in marriagies %}
+        <li>{{ proposal.husband.first_name }} {{ proposal.husband.last_name }} +
+            {{ proposal.wife.first_name }} {{ proposal.wife.last_name }} = ❤️ (Approved 
+            {{ proposal.created_at|date:"d.m.Y" }})
+        </li>
+    {% endfor %}
+</ul>
 {% endblock %}
 
 <form id="logoutForm" method="post" action="{% url 'logout' %}" style="display:none;">

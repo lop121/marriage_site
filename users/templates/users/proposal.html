@@ -22,25 +22,3 @@
 </form>
 {% endblock %}
 
-{% block information %}
-<ul>
-<h1>Молодожены нашего сайта!</h1>
-<hr>
-    {% for proposal in proposals %}
-        {% if proposal.status == 1 %}
-            <li>{{ proposal.sender.first_name }} {{ proposal.sender.last_name }} + {{ proposal.display_receiver }} =
-                ❤️</li>
-            <p>Status: Approved</p>
-        {% elif proposal.status == -1 %}
-            <li>{{ proposal.sender.first_name }} {{ proposal.sender.last_name }} → {{ proposal.display_receiver }} =
-                🤔</li>
-            <p>Status: Not Approved</p>
-        {% endif %}
-    {% endfor %}
-</ul>
-{% endblock %}
-
-<!-- Вывод статуса (если был POST) -->
-{% if status %}
-    <p>Статус: {{ status }}</p>
-{% endif %}

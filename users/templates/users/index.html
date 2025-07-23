@@ -4,5 +4,8 @@
 <p>Hello, shma!</p>
     <li><a href="{% url 'proposal'%}?type=registered">Send a request to an authorized user</a></li>
     <li><a href="{% url 'proposal'%}?type=unregistered">Send a request to a NOT authorized user</a></li>
+    {% if user.is_authenticated %}
     <li><a href="{% url 'offers-list'%}">View my offers</a></li>
+    {% endif %}
 {% endblock %}
+

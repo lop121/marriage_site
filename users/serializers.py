@@ -31,11 +31,20 @@ class MarriageSerializers(ModelSerializer):
                 "Provide only one: username or full name"
             )
 
+        sender = self.context['request'].user
+        if sender.is_married:
+            raise serializers.ValidationError({'name':"You are already married"})
+
         return data
 
     def validate_receiver_username(self, value):
         if not User.objects.filter(username=value).exists():
             raise serializers.ValidationError("User not found")
+
+        receiver = User.objects.get(username=value)
+        if receiver.is_married:
+            raise serializers.ValidationError("This user is already married")
+
         return value
 
     def create(self, validated_data):
