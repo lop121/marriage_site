@@ -81,6 +81,10 @@ class OffersSerializers(ModelSerializer):
         model = MarriageProposals
         fields = '__all__'
         read_only_fields = ('sender', 'receiver', 'created_at')
+        extra_kwargs = {
+            'status': {'required': False}
+        }
+
 
     def update(self, instance, validated_data):
         if (instance.status == MarriageProposals.Status.WAITING and validated_data.get('status') ==
@@ -128,3 +132,6 @@ class OffersSerializers(ModelSerializer):
                 raise serializers.ValidationError("Заявка уже обработана")
 
         return value
+
+class MarriagesListSerializers(ModelSerializer):
+    pass

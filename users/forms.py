@@ -53,5 +53,5 @@ class ProfileUserForm(forms.ModelForm):
 
     class Meta:
         model = get_user_model()
-        fields = ['username', 'email', 'first_name', 'last_name', 'data_birth', 'is_married']
+        fields = ['photo','username', 'email', 'first_name', 'last_name', 'data_birth', 'is_married']
 

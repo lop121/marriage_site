@@ -28,7 +28,7 @@ document.querySelectorAll('.reject-btn').forEach(btn => {
 });
 
 function updateOfferStatus(offerId, status) {
-    fetch(`${offerId}/`, {
+    fetch(`/api/offers/${offerId}/`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',
@@ -39,7 +39,7 @@ function updateOfferStatus(offerId, status) {
     .then(response => {
         if (response.ok) {
             alert('Статус обновлен!');
-            location.reload();  // Перезагружаем страницу
+            location.reload();
         } else {
             alert('Ошибка обновления');
         }

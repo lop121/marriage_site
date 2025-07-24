@@ -8,13 +8,14 @@ from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, CreateView, UpdateView
 from rest_framework import status, mixins, generics
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.generics import ListCreateAPIView, UpdateAPIView
+from rest_framework.generics import ListCreateAPIView, UpdateAPIView, ListAPIView
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from users.forms import LoginUserForm, RegisterUserForm, ProfileUserForm
 from users.models import User, Marriage, MarriageProposals
-from users.serializers import MarriageSerializers, OffersSerializers
+from users.serializers import MarriageSerializers, OffersSerializers, MarriagesListSerializers
 
 
 class HomePage(ListView):
@@ -122,43 +123,44 @@ class OffersHTML(OffersAPI):
         })
 
 class DivorceAPI(
-    mixins.DestroyModelMixin,
     mixins.UpdateModelMixin,
     generics.GenericAPIView
 ):
-
     def get_object(self):
         user = self.request.user
 
         marriage = Marriage.objects.filter(
-            models.Q(husband=user) | models.Q(wife=user)
+            (models.Q(husband=user) | models.Q(wife=user)),
+            status=Marriage.Status.ACTIVE
         ).first()
 
         if not marriage:
-            raise Http404("Вы не состоите в браке")
+            raise Http404("Вы не состоите в активном браке")
         return marriage
 
-    def destroy(self, request, *args, **kwargs):
+    def update(self, request, *args, **kwargs):
         try:
             with transaction.atomic():
                 marriage = self.get_object()
 
                 husband = marriage.husband
                 wife = marriage.wife
-
                 husband.is_married = False
                 wife.is_married = False
-
                 husband.save()
                 wife.save()
 
-                marriage.delete()
+                marriage.status = Marriage.Status.DIVORCED
+                marriage.save()
 
-                return Response(status=status.HTTP_204_NO_CONTENT)
+                return Response(
+                    {"detail": "Брак расторгнут успешно"},
+                    status=status.HTTP_200_OK
+                )
 
         except Http404:
             return Response(
-                {"detail": "Брак не найден"},
+                {"detail": "Активный брак не найден"},
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
@@ -167,10 +169,35 @@ class DivorceAPI(
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
+    def patch(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
 
-# class DivorceHTML(DivorceAPI):
-#     renderer_classes = [TemplateHTMLRenderer]
-#     template_name = 'users/divorce_confirm.html'
+class MarriagesHTML(APIView):
+    renderer_classes = [TemplateHTMLRenderer]
+    template_name = 'users/marriages-list.html'
 
+    def get(self, request, *args, **kwargs):
+        marriages = Marriage.objects.filter(
+            models.Q(husband=request.user) | models.Q(wife=request.user))
+
+        marriages_data = []
+        for marriage in marriages.select_related('husband', 'wife'):
+            partner = marriage.wife if marriage.husband == request.user else marriage.husband
+
+
+            marriages_data.append({
+                'partner': partner,
+                'start_date': marriage.created_at.strftime("%d.%m.%Y"),
+                'end_date': marriage.updated_at.strftime("%d.%m.%Y")
+                if marriage.status != Marriage.Status.ACTIVE else None,
+                'is_active': marriage.status == Marriage.Status.ACTIVE,
+                'partner_photo': getattr(partner, 'has_photo', '/media/users/default.png')
+            })
+
+
+        marriages_data.sort(key=lambda x: x['start_date'], reverse=True)
+
+        return Response({
+            'marriages_list': marriages_data,
+            'request': request
+        })

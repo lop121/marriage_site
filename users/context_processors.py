@@ -2,5 +2,5 @@ from users.models import Marriage
 
 
 def get_marriage(request):
-    marriagies = Marriage.objects.all()
-    return {'marriagies': marriagies}
+    marriages = Marriage.objects.filter(status = Marriage.Status.ACTIVE)
+    return {'marriages': marriages}

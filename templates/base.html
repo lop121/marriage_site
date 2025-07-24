@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>{{  title }}</title>
+    <style>
+        body {
+            background-color: white !important;
+            margin: 0;
+            padding: 10px;
+        }
+    </style>
 </head>
 <body>
 
@@ -31,12 +38,26 @@
 <ul>
 <h1>Молодожены нашего сайта!</h1>
 <hr>
-    {% for proposal in marriagies %}
-        <li>{{ proposal.husband.first_name }} {{ proposal.husband.last_name }} +
-            {{ proposal.wife.first_name }} {{ proposal.wife.last_name }} = ❤️ (Approved 
-            {{ proposal.created_at|date:"d.m.Y" }})
-        </li>
-    {% endfor %}
+    {% for proposal in marriages %}
+      <li>
+        {{ proposal.husband.first_name }} {{ proposal.husband.last_name }}
+          {% if proposal.husband.has_photo %}
+            <img src="{{ proposal.husband.has_photo }}" width="50" height="50">
+            {% else %}
+          <img src="/media/users/default.png" width="50" height="50">
+            {% endif %}
+          +
+          {{ proposal.wife.first_name }} {{ proposal.wife.last_name }}
+          {% if proposal.wife.has_photo %}
+              <img src="{{ proposal.wife.has_photo }}" width="50" height="50">
+          {% else %}
+              <img src="/media/users/default.png" width="50" height="50">
+          {% endif %}
+          = ❤️ (Approved {{ proposal.created_at|date:"d.m.Y" }})
+      </li>
+    {% empty %}
+      <li>No marriage proposals yet</li>
+{% endfor %}
 </ul>
 {% endblock %}
 

@@ -5,11 +5,11 @@
 <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
 
-{#    {% if user.photo %}#}
-{#    <p><img src="{{ user.photo.url }}"></p>#}
-{#    {% else %}#}
-{#    <p><img src="/media/users/default.png"></p>#}
-{#    {% endif %}#}
+    {% if user.photo %}
+    <p><img src="{{ user.photo.url }}" style="width: 300px; height: 300px;"></p>
+    {% else %}
+    <p><img src="/media/users/default.png" style="width: 300px; height: 300px"></p>
+    {% endif %}
 
     <input type="hidden" name="next" value="{{ next }}"/>
     <div class="form-error">{{form.non_field_errors}}</div>
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmBtn.addEventListener('click', async function() {
             try {
                 const response = await fetch("{% url 'divorce' %}", {
-                    method: 'DELETE',
+                    method: 'PATCH',
                     headers: {
                         'X-CSRFToken': '{{ csrf_token }}',
                         'Content-Type': 'application/json',
@@ -71,11 +71,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (response.ok) {
-                    window.location.href = "{% url 'profile' %}";  // Редирект после успеха
+                    window.location.href = "{% url 'profile' %}";
                 } else {
                     const errorData = await response.json();
                     alert("Error: " + (errorData.detail || "Failed to process divorce"));
-                    // Возвращаем интерфейс в исходное состояние
                     if (initiateBtn && confirmationBlock) {
                         initiateBtn.style.display = 'inline-block';
                         confirmationBlock.style.display = 'none';

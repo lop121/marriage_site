@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 from jedi.inference.flow_analysis import Status
@@ -21,6 +23,8 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=150, blank=False, null=False)
     last_name = models.CharField(max_length=150, blank=False, null=False)
 
+    photo = models.ImageField(upload_to='photos/%Y/%m/%d/', default=None, blank=True, null=True, verbose_name='Photo')
+
     objects = UserManager()
     married = MarriedManager()
 
@@ -35,19 +39,42 @@ class User(AbstractUser):
             return marriage.display_partner(self)
         return None
 
+    @property
+    def has_photo(self):
+        user = get_user_model().objects.get(pk=self.pk)
+        if user.photo:
+            try:
+                return user.photo.url
+            except ValueError:
+                pass
+        return f"{settings.MEDIA_URL}users/default.png"
+
+
     def __str__(self):
         return self.username
 
 
 class Marriage(models.Model):
-    husband = models.OneToOneField('User', on_delete=models.CASCADE, related_name='husband')
-    wife = models.OneToOneField('User', on_delete=models.CASCADE, related_name='wife')
+    class Status(models.IntegerChoices):
+        ACTIVE = 1,
+        DIVORCED = 0,
+
+    husband = models.ForeignKey('User', on_delete=models.CASCADE, related_name='husband')
+    wife = models.ForeignKey('User', on_delete=models.CASCADE, related_name='wife')
+
+    status = models.SmallIntegerField(choices=Status.choices, default=Status.ACTIVE,verbose_name='status')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = [('husband', 'wife')]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['husband', 'wife', 'status'],
+                condition=models.Q(status=1),
+                name='unique_active_marriage'
+            )
+        ]
 
     def display_partner(self, user):
         if user == self.husband:

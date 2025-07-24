@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<ul>
+  {% for marriage in marriages_list %}
+    <li>
+        <img src="{{ marriage.partner_photo }}" width="50">
+      Marriage with {{ marriage.partner.get_full_name }}
+      ({{ marriage.start_date }}
+      {% if marriage.end_date %} - {{ marriage.end_date }}{% endif %})
+      {% if marriage.is_active %}[Active]{% else %}[Divorced]{% endif %}
+    </li>
+  {% empty %}
+    <li>You don't have a marriage history yet</li>
+  {% endfor %}
+</ul>
+{% endblock %}
