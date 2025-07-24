@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 
 from users.forms import LoginUserForm, RegisterUserForm, ProfileUserForm
 from users.models import User, Marriage, MarriageProposals
-from users.serializers import MarriageSerializers, OffersSerializers, MarriagesListSerializers
+from users.serializers import MarriageSerializers, OffersSerializers
 
 
 class HomePage(ListView):
@@ -64,10 +64,10 @@ class ProposalAPI(ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
 
-        if (request.accepted_renderer.format == 'html' and
-                response.status_code == status.HTTP_201_CREATED):
-            proposal_type = request.GET.get('type', 'registered') or request.POST.get('type', 'registered')
-            return redirect(f"{reverse('proposal')}?type={proposal_type}")
+        # if (request.accepted_renderer.format == 'html' and
+        #         response.status_code == status.HTTP_201_CREATED):
+        #     proposal_type = request.GET.get('type', 'registered') or request.POST.get('type', 'registered')
+        #     return redirect(f"{reverse('proposal')}?type={proposal_type}")
         return response
 
 class ProposalHTML(ProposalAPI):

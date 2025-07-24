@@ -15,6 +15,13 @@
         <label>Last name:</label>
         <input type="text" name="last_name" required>
 
+        <label>Gender:</label>
+        <select name="gender" required>
+            <option value="" selected disabled>Select gender</option>
+            <option value="1">Male</option>
+            <option value="0">Female</option>
+        </select>
+
     {% endif %}
 
     <input type="hidden" name="status" value="-1">

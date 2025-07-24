@@ -16,8 +16,8 @@ class User(AbstractUser):
         WOMAN = 0
 
     is_married = models.BooleanField(default=False, verbose_name='Married')
-    gender = models.BooleanField(
-        choices=tuple(map(lambda x: (bool(x[0]), x[1]), Gender.choices)),
+    gender = models.SmallIntegerField(
+        choices=Gender.choices,
         default=None
     )
     first_name = models.CharField(max_length=150, blank=False, null=False)
@@ -28,7 +28,7 @@ class User(AbstractUser):
     objects = UserManager()
     married = MarriedManager()
 
-    REQUIRED_FIELDS = ['email', 'gender', 'first_name', 'last_name']
+    REQUIRED_FIELDS = ['gender', 'first_name', 'last_name']
 
     @property
     def partner(self):
@@ -70,10 +70,15 @@ class Marriage(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['husband', 'wife', 'status'],
+                fields=['husband', 'status'],
                 condition=models.Q(status=1),
-                name='unique_active_marriage'
-            )
+                name='unique_active_husband'
+            ),
+            models.UniqueConstraint(
+                fields=['wife', 'status'],
+                condition=models.Q(status=1),
+                name='unique_active_wife'
+            ),
         ]
 
     def display_partner(self, user):

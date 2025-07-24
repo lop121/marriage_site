@@ -24,7 +24,10 @@ SECRET_KEY = 'django-insecure-eney+t3kue#ch^-j6%=v6bc4h$h44#($x(flc&_4xv(#g(&7a2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1']
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
 
 # Application definition
 
@@ -40,9 +43,11 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
 ]
 
-REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'users.utils.exceptions.custom_exception_handler',
-}
+# REST_FRAMEWORK = {
+#     'DEFAULT_AUTHENTICATION_CLASSES': [
+#         'rest_framework.authentication.TokenAuthentication',
+#     ],
+# }
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -103,6 +108,8 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+
 
 
 # Internationalization
