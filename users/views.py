@@ -1,21 +1,16 @@
 import uuid
-from lib2to3.fixes.fix_input import context
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.db import models, transaction
 from django.db.models import Q
-from django.http import Http404
 from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, CreateView, UpdateView, TemplateView, DetailView
 from rest_framework import status, mixins, generics, serializers, permissions
-from rest_framework.decorators import permission_classes
 from rest_framework.exceptions import PermissionDenied, NotFound
 from rest_framework.generics import ListCreateAPIView, UpdateAPIView, ListAPIView
-from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from users.forms import LoginUserForm, RegisterUserForm, ProfileUserForm, MarriageProposalForm
 from users.models import User, Marriage, MarriageProposals
@@ -55,24 +50,6 @@ class UserProfile(LoginRequiredMixin,UpdateView):
         context.update({
             'is_married': user.is_married,
             'partner_name': user.partner,
-        })
-
-        return context
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        proposal_type = self.request.GET.get('type', 'registered')
-        is_for_registered = proposal_type != 'unregistered'
-
-        free_users = User.objects.filter(~Q(username=self.request.user.username), is_married=False)
-
-        form = MarriageProposalForm(initial={'type': proposal_type})
-
-        context.update({
-            'free_users': free_users,
-            'is_for_registered': is_for_registered,
-            'form': form,
         })
 
         return context
