@@ -20,21 +20,33 @@ class MarriageSerializers(ModelSerializer):
     def validate(self, data):
         sender = self.context['request'].user
         has_username = 'receiver_username' in data
-        has_fio = all(data.get(field) for field in ['last_name', 'first_name', 'gender'])
+        has_fio = all(field in data for field in ['last_name', 'first_name', 'gender'])
 
         # Validate input combination
         if not has_username and not has_fio:
-            raise serializers.ValidationError("Provide either username or full name")
+            raise serializers.ValidationError("Укажите либо имя пользователя, либо полное имя")
         if has_username and has_fio:
-            raise serializers.ValidationError("Provide only one: username or full name")
+            raise serializers.ValidationError("Укажите только одно: имя пользователя или полное имя")
+
+        if has_fio and not all(
+                data[field] for field in ['last_name', 'first_name']):
+            raise serializers.ValidationError("Все поля для нового пользователя должны быть заполнены")
+
+        if 'gender' not in data or data['gender'] is None:
+            raise serializers.ValidationError("Пол должен быть указан")
 
         # Validate sender status
         if sender.is_married:
-            raise serializers.ValidationError("You are already married")
+            raise serializers.ValidationError("Вы уже женаты")
 
         # Validate gender for new user
-        if has_fio and int(data['gender']) == sender.gender:
-            raise serializers.ValidationError("Same-sex marriage not allowed")
+        if has_fio:
+            try:
+                receiver_gender = data['gender']
+                if receiver_gender == sender.gender:
+                    raise serializers.ValidationError("Однополые браки не разрешены")
+            except (ValueError, TypeError):
+                raise serializers.ValidationError("Неверное значение пола")
 
         return data
 

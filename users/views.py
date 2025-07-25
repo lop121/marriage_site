@@ -25,7 +25,7 @@ from users.serializers import MarriageSerializers, OffersSerializers, DivorceSer
 class HomePage(ListView):
     template_name = 'users/index.html'
     extra_context = {
-        'title': 'HomePage'
+        'title': 'Главная страница'
     }
 
     def get_queryset(self):
@@ -34,13 +34,13 @@ class HomePage(ListView):
 class LoginUser(LoginView):
     form_class = LoginUserForm
     template_name = 'users/login.html'
-    extra_context = {'title': 'Log In'}
+    extra_context = {'title': 'Авторизация'}
     success_url = 'home'
 
 class RegistrationUser(CreateView):
     form_class = RegisterUserForm
     template_name = 'users/register.html'
-    extra_context = {'title': 'Registration'}
+    extra_context = {'title': 'Регистрация'}
     success_url = reverse_lazy('login')
 
 class UserProfile(LoginRequiredMixin,UpdateView):
@@ -51,8 +51,30 @@ class UserProfile(LoginRequiredMixin,UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        context['is_married'] = user.is_married
-        context['partner_name'] = user.partner
+
+        context.update({
+            'is_married': user.is_married,
+            'partner_name': user.partner,
+        })
+
+        return context
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        proposal_type = self.request.GET.get('type', 'registered')
+        is_for_registered = proposal_type != 'unregistered'
+
+        free_users = User.objects.filter(~Q(username=self.request.user.username), is_married=False)
+
+        form = MarriageProposalForm(initial={'type': proposal_type})
+
+        context.update({
+            'free_users': free_users,
+            'is_for_registered': is_for_registered,
+            'form': form,
+        })
+
         return context
 
     def get_success_url(self):
@@ -173,7 +195,7 @@ class OffersAPI(
 
     def perform_update(self, serializer):
         if serializer.instance.receiver != self.request.user:
-            raise PermissionDenied("You don't update this offer!")
+            raise PermissionDenied("Ты не можешь изменить эту заявку!")
 
         validated_data = serializer.validated_data
         instance = serializer.instance
@@ -268,6 +290,9 @@ class DivorceAPI(
         if response.status_code == status.HTTP_200_OK:
             return Response({"detail": "Брак расторгнут успешно"}, status=status.HTTP_200_OK)
         return response
+
+    def patch(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
 
 
 class MarriagesHTML(TemplateView):

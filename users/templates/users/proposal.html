@@ -23,36 +23,26 @@
     {{ form.type }}
 
     {% if is_for_registered %}
-        <!-- Только для registered: показываем receiver_username -->
         <div>
-            <label for="{{ form.receiver_username.id_for_label }}">Имя пользователя (если существующий):</label>
+            <label>Имя пользователя (если существующий):</label>
             {{ form.receiver_username }}
-            {% if form.receiver_username.errors %}
-                <p style="color: red;">{{ form.receiver_username.errors }}</p>
-            {% endif %}
+            {% if form.receiver_username.errors %}<p style="color: red;">{{ form.receiver_username.errors }}</p>{% endif %}
         </div>
     {% else %}
-        <!-- Только для unregistered: показываем first_name, last_name, gender -->
         <div>
-            <label for="{{ form.first_name.id_for_label }}">Имя (для нового пользователя):</label>
+            <label>Имя (для нового пользователя):</label>
             {{ form.first_name }}
-            {% if form.first_name.errors %}
-                <p style="color: red;">{{ form.first_name.errors }}</p>
-            {% endif %}
+            {% if form.first_name.errors %}<p style="color: red;">{{ form.first_name.errors }}</p>{% endif %}
         </div>
         <div>
-            <label for="{{ form.last_name.id_for_label }}">Фамилия (для нового пользователя):</label>
+            <label>Фамилия (для нового пользователя):</label>
             {{ form.last_name }}
-            {% if form.last_name.errors %}
-                <p style="color: red;">{{ form.last_name.errors }}</p>
-            {% endif %}
+            {% if form.last_name.errors %}<p style="color: red;">{{ form.last_name.errors }}</p>{% endif %}
         </div>
         <div>
-            <label for="{{ form.gender.id_for_label }}">Пол (для нового пользователя):</label>
+            <label>Пол (для нового пользователя):</label>
             {{ form.gender }}
-            {% if form.gender.errors %}
-                <p style="color: red;">{{ form.gender.errors }}</p>
-            {% endif %}
+            {% if form.gender.errors %}<p style="color: red;">{{ form.gender.errors }}</p>{% endif %}
         </div>
     {% endif %}
 

@@ -19,11 +19,12 @@
 	<li style="float: right">
 		<a href="{% url 'profile' %}"> {{ user.first_name }} </a> |
     <a href="#" onclick="document.getElementById('logoutForm').submit(); return false;">
-        Log Out
+        Выйти
     </a>
 </li>
 {% else %}
-	<li style="float: right"><a href="{% url 'login' %}"> Log In </a> | <a href="{% url 'register' %}">Sign In</a>
+	<li style="float: right"><a href="{% url 'login' %}"> Войти </a> | <a href="
+{% url 'register' %}">Зарегистрироваться</a>
 	</li>
 {% endif %}
 			</ul>
@@ -53,10 +54,10 @@
           {% else %}
               <img src="/media/users/default.png" width="50" height="50">
           {% endif %}
-          = ❤️ (Approved {{ proposal.created_at|date:"d.m.Y" }})
+          = ❤️ (Брак заключен: {{ proposal.created_at|date:"d.m.Y" }})
       </li>
     {% empty %}
-      <li>No marriage proposals yet</li>
+      <li>Молодоженов, к сожалению, еще нет</li>
 {% endfor %}
 </ul>
 {% endblock %}

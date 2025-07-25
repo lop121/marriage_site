@@ -24,14 +24,15 @@
 </form>
 
 {% if is_married %}
-    <p>Your Partner - {{ partner_name }}</p>
+    <p>Твой супруг(а) - {{ partner_name }}</p>
 
     <button id="initiateDivorceBtn" class="divorce-btn">Divorce</button>
+    <div id="result"></div>
 
     <div id="confirmationBlock" style="display: none; margin-top: 10px;">
-        <p>Are you sure you want to divorce {{ partner_name }}?</p>
-        <button id="confirmDivorceBtn" class="confirm-btn" style="background: #ff6a6a;">Yes</button>
-        <button id="cancelDivorceBtn" class="confirm-btn" style="background: #7d8891;">No</button>
+        <p>Вы уверены, что хотите развестись с {{ partner_name }}?</p>
+        <button id="confirmDivorceBtn" class="confirm-btn" style="background: #ff6a6a;">Да</button>
+        <button id="cancelDivorceBtn" class="confirm-btn" style="background: #7d8891;">Нет</button>
     </div>
 {% endif %}
 
@@ -60,34 +61,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Обработка подтверждения развода
     if (confirmBtn) {
-        confirmBtn.addEventListener('click', async function() {
-            try {
-                const response = await fetch("{% url 'divorce' %}", {
-                    method: 'PATCH',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}',
-                        'Content-Type': 'application/json',
-                    },
-                });
+    confirmBtn.addEventListener('click', async function() {
+        try {
+            const response = await fetch("{% url 'divorce' %}", {
+                method: 'PATCH',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json',
+                },
+            });
 
-                if (response.ok) {
+            const data = await response.json();
+
+            if (response.ok) {
+                // Показываем сообщение успеха в #result
+                document.getElementById('result').innerHTML = '<p style="color: green;">' + (data.detail || "Брак успешно расторгнут") + '</p>';
+
+                // Редирект с задержкой (чтобы увидеть сообщение)
+                setTimeout(() => {
                     window.location.href = "{% url 'profile' %}";
-                } else {
-                    const errorData = await response.json();
-                    alert("Error: " + (errorData.detail || "Failed to process divorce"));
-                    if (initiateBtn && confirmationBlock) {
-                        initiateBtn.style.display = 'inline-block';
-                        confirmationBlock.style.display = 'none';
-                    }
-                }
-            } catch (error) {
-                alert("Request failed: " + error);
+                }, 2000);  // 2 секунды
+            } else {
+                // Ошибка: Показываем в #result вместо alert
+                document.getElementById('result').innerHTML = '<p style="color: red;">Ошибка: ' + (data.detail || "Не удалось расторгнуть брак") + '</p>';
+
                 if (initiateBtn && confirmationBlock) {
                     initiateBtn.style.display = 'inline-block';
                     confirmationBlock.style.display = 'none';
                 }
             }
-        });
+        } catch (error) {
+            document.getElementById('result').innerHTML = '<p style="color: red;">Ошибка запроса: ' + error + '</p>';
+            if (initiateBtn && confirmationBlock) {
+                initiateBtn.style.display = 'inline-block';
+                confirmationBlock.style.display = 'none';
+            }
+        }
+    });
     }
 });
 </script>

@@ -61,5 +61,7 @@ class MarriageProposalForm(forms.Form):
     receiver_username = forms.CharField(required=False, label="Username (login)")
     first_name = forms.CharField(required=False, label="First name")
     last_name = forms.CharField(required=False, label="Last name")
-    gender = forms.ChoiceField(choices=User.Gender.choices, required=False, label="Gender")
+
+    gender_choices = [('', 'Выберите пол')] + list(User.Gender.choices)
+    gender = forms.ChoiceField(choices=gender_choices, required=False, label="Gender")
 
