@@ -1,31 +1,100 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<form method="post" action="">
+{% if is_for_registered %}
+    <h1>Для зарегистрированных пользователей</h1>
+    <hr>
+    <h2>Список свободных:</h2>
+    <ul>
+    {% for user in free_users %}
+            <li>{{ user.get_full_name }} (Login: {{ user.username }})</li>
+    {% endfor %}
+</ul>
+{% else %}
+    <p>Для незарегистрированных</p>
+{% endif %}
+    <hr>
+
+<h2>Отправить предложение</h2>
+<form id="proposal-form" method="post">
     {% csrf_token %}
-    <input type="hidden" name="type" value="{{ request.GET.type }}">
+
+    <!-- Скрытое поле type (для JS/redirect) -->
+    {{ form.type }}
 
     {% if is_for_registered %}
-      <label>Username (login):</label>
-        <input type="text" name="receiver_username" required>
+        <!-- Только для registered: показываем receiver_username -->
+        <div>
+            <label for="{{ form.receiver_username.id_for_label }}">Имя пользователя (если существующий):</label>
+            {{ form.receiver_username }}
+            {% if form.receiver_username.errors %}
+                <p style="color: red;">{{ form.receiver_username.errors }}</p>
+            {% endif %}
+        </div>
     {% else %}
-        <label>First name:</label>
-        <input type="text" name="first_name" required>
-
-        <label>Last name:</label>
-        <input type="text" name="last_name" required>
-
-        <label>Gender:</label>
-        <select name="gender" required>
-            <option value="" selected disabled>Select gender</option>
-            <option value="1">Male</option>
-            <option value="0">Female</option>
-        </select>
-
+        <!-- Только для unregistered: показываем first_name, last_name, gender -->
+        <div>
+            <label for="{{ form.first_name.id_for_label }}">Имя (для нового пользователя):</label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}
+                <p style="color: red;">{{ form.first_name.errors }}</p>
+            {% endif %}
+        </div>
+        <div>
+            <label for="{{ form.last_name.id_for_label }}">Фамилия (для нового пользователя):</label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}
+                <p style="color: red;">{{ form.last_name.errors }}</p>
+            {% endif %}
+        </div>
+        <div>
+            <label for="{{ form.gender.id_for_label }}">Пол (для нового пользователя):</label>
+            {{ form.gender }}
+            {% if form.gender.errors %}
+                <p style="color: red;">{{ form.gender.errors }}</p>
+            {% endif %}
+        </div>
     {% endif %}
 
-    <input type="hidden" name="status" value="-1">
-    <button type="submit">Send proposal</button>
+    <button type="submit">Отправить</button>
 </form>
+
+<div id="result"></div>  <!-- Для сообщений -->
+
+<script>
+document.getElementById('proposal-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const formData = new FormData(this);
+
+    fetch('/api/proposal/', {  // Отправка на DRF API
+        method: 'POST',
+        body: formData,
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+    })
+    .then(response => {
+        if (!response.ok) {  // Если 400 (ValidationError)
+            return response.json().then(err => { throw err; });
+        }
+        return response.json();
+    })
+    .then(data => {
+        document.getElementById('result').innerHTML = '<p style="color: green;">' + data.message + '</p>';
+        // Redirect или reload после успеха
+        const proposalType = document.querySelector('input[name="type"]').value || 'registered';
+        setTimeout(() => window.location.href = `/proposal/?type=${proposalType}`, 2000);  // Имитация redirect
+    })
+    .catch(error => {
+        let errorMsg = 'Ошибка: ';
+        if (error.non_field_errors) {
+            errorMsg += error.non_field_errors.join(', ');
+        } else if (error.receiver_username) {
+            errorMsg += error.receiver_username.join(', ');
+        } else {
+            errorMsg += JSON.stringify(error);  // Общие ошибки
+        }
+        document.getElementById('result').innerHTML = '<p style="color: red;">' + errorMsg + '</p>';
+    });
+});
+</script>
 {% endblock %}
 

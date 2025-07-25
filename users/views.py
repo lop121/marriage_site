@@ -1,19 +1,23 @@
+import uuid
+from lib2to3.fixes.fix_input import context
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.db import models, transaction
+from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import render, redirect
 from django.urls import reverse_lazy, reverse
-from django.views.generic import ListView, CreateView, UpdateView
-from rest_framework import status, mixins, generics
+from django.views.generic import ListView, CreateView, UpdateView, TemplateView, DetailView
+from rest_framework import status, mixins, generics, serializers
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import ListCreateAPIView, UpdateAPIView, ListAPIView
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from users.forms import LoginUserForm, RegisterUserForm, ProfileUserForm
+from users.forms import LoginUserForm, RegisterUserForm, ProfileUserForm, MarriageProposalForm
 from users.models import User, Marriage, MarriageProposals
 from users.serializers import MarriageSerializers, OffersSerializers
 
@@ -61,27 +65,88 @@ class ProposalAPI(ListCreateAPIView):
     queryset = MarriageProposals.objects.all()
     serializer_class = MarriageSerializers
 
+    def perform_create(self, serializer):
+        sender = self.request.user
+        validated_data = serializer.validated_data
+
+        receiver = None
+        receiver_fullname = None
+
+        with transaction.atomic():
+            if MarriageProposals.objects.filter(sender=sender, status=MarriageProposals.Status.WAITING).exists():
+                raise serializers.ValidationError("You have already sent an offer")
+
+            if 'receiver_username' in validated_data:
+                # Existing user case
+                username = validated_data.pop('receiver_username')
+                receiver = User.objects.get(username=username)
+
+                if sender == receiver:
+                    raise serializers.ValidationError("You can't send it to yourself")
+
+                if receiver.gender == sender.gender:
+                    raise serializers.ValidationError("You can't send to same-sex user")
+            else:
+                # New user case
+                first_name = validated_data.pop('first_name')
+                last_name = validated_data.pop('last_name')
+                gender = validated_data.pop('gender')
+                receiver_fullname = f"{first_name} {last_name}".strip()
+
+                if sender.get_full_name() == receiver_fullname:
+                    raise serializers.ValidationError("You can't send it to yourself")
+
+                receiver = User.objects.create(
+                    username=f"user_{uuid.uuid4().hex[:8]}",
+                    first_name=first_name,
+                    last_name=last_name,
+                    gender=gender,
+                    is_active=True
+                )
+
+                # For new users, automatically complete the marriage
+                validated_data['status'] = MarriageProposals.Status.COMPLETE
+
+            # Create marriage if status is COMPLETE
+            if validated_data.get('status') == MarriageProposals.Status.COMPLETE:
+                husband, wife = (sender, receiver) if sender.gender == User.Gender.MAN else (receiver, sender)
+                User.objects.filter(pk__in=[sender.pk, receiver.pk]).update(is_married=True)
+                Marriage.objects.create(husband=husband, wife=wife)
+
+            serializer.save(
+                sender=sender,
+                receiver=receiver,
+                receiver_fullname=receiver_fullname,
+                status=validated_data.get('status', MarriageProposals.Status.WAITING)
+            )
+
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
-
-        # if (request.accepted_renderer.format == 'html' and
-        #         response.status_code == status.HTTP_201_CREATED):
-        #     proposal_type = request.GET.get('type', 'registered') or request.POST.get('type', 'registered')
-        #     return redirect(f"{reverse('proposal')}?type={proposal_type}")
+        if response.status_code == status.HTTP_201_CREATED:
+            # Возвращаем JSON для JS (можно кастомизировать)
+            return Response({"success": True, "message": "Предложение отправлено!"}, status=status.HTTP_201_CREATED)
         return response
 
-class ProposalHTML(ProposalAPI):
-    renderer_classes = [TemplateHTMLRenderer]
+class ProposalHTML(TemplateView):
     template_name = 'users/proposal.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-    def get(self, request, *args, **kwargs):
-        is_for_registered = request.GET.get('type') != 'unregistered'
-        return Response({
-            'proposals': self.get_queryset(),
+        proposal_type = self.request.GET.get('type', 'registered')
+        is_for_registered = proposal_type != 'unregistered'
+
+        free_users = User.objects.filter(~Q(username=self.request.user.username), is_married=False)
+
+        form = MarriageProposalForm(initial={'type': proposal_type})
+
+        context.update({
+            'free_users': free_users,
             'is_for_registered': is_for_registered,
-            'request': request,
+            'form': form,
         })
+
+        return context
 
 class OffersAPI(
     mixins.CreateModelMixin,
