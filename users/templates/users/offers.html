@@ -1,50 +1,62 @@
 {% extends 'base.html' %}
 
 {% block content %}
-{% for offer in offers %}
-<div class="offer">
-    <h3>Заявка #{{ offer.id }}</h3>
-    <p>От: {{ offer.sender.username }}</p>
+<h1>Ваши предложения</h1>
 
-    <button class="accept-btn" data-offer-id="{{ offer.id }}">Accept</button>
-    <button class="reject-btn" data-offer-id="{{ offer.id }}">Cancel</button>
+<ul>
+    {% for offer in offers %}
+        <li>
+            От: {{ offer.sender.username }} ({{ offer.created_at }})
+            <button class="accept-btn" data-id="{{ offer.id }}">Принять</button>
+            <button class="reject-btn" data-id="{{ offer.id }}">Отклонить</button>
+        </li>
+    {% endfor %}
+</ul>
 
-</div>
-{% endfor %}
+<div id="result"></div>
 
 <script>
+// Функция для обновления статуса (общая для accept и reject)
+function updateOfferStatus(offerId, newStatus) {
+    fetch(`/api/offers/${offerId}/`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus }),
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw err; });
+        }
+        return response.json();
+    })
+    .then(data => {
+        document.getElementById('result').innerHTML = '<p style="color: green;">Статус обновлён!</p>';
+        setTimeout(() => location.reload(), 2000);
+    })
+    .catch(error => {
+        let errorMsg = 'Ошибка: ' + (error.detail || JSON.stringify(error));  // Парсит ValidationError
+        document.getElementById('result').innerHTML = '<p style="color: red;">' + errorMsg + '</p>';
+    });
+}
+
+// Обработчики для кнопок
 document.querySelectorAll('.accept-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-        const offerId = this.dataset.offerId;
-        updateOfferStatus(offerId, 1);
+        const offerId = this.dataset.id;
+        updateOfferStatus(offerId, {{ choice.COMPLETE }});
     });
 });
 
 document.querySelectorAll('.reject-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-        const offerId = this.dataset.offerId;
-        updateOfferStatus(offerId, 0);
+        const offerId = this.dataset.id;
+        updateOfferStatus(offerId, {{choice.COMPLETE}});
     });
 });
-
-function updateOfferStatus(offerId, status) {
-    fetch(`/api/offers/${offerId}/`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}',
-        },
-        body: JSON.stringify({ status: status })
-    })
-    .then(response => {
-        if (response.ok) {
-            alert('Статус обновлен!');
-            location.reload();
-        } else {
-            alert('Ошибка обновления');
-        }
-    })
-    .catch(error => console.error('Ошибка:', error));
-}
 </script>
 {% endblock %}
+
+

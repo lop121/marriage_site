@@ -7,11 +7,11 @@ from django.contrib.auth.views import LoginView
 from django.db import models, transaction
 from django.db.models import Q
 from django.http import Http404
-from django.shortcuts import render, redirect
 from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, CreateView, UpdateView, TemplateView, DetailView
-from rest_framework import status, mixins, generics, serializers
-from rest_framework.exceptions import PermissionDenied
+from rest_framework import status, mixins, generics, serializers, permissions
+from rest_framework.decorators import permission_classes
+from rest_framework.exceptions import PermissionDenied, NotFound
 from rest_framework.generics import ListCreateAPIView, UpdateAPIView, ListAPIView
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
@@ -19,7 +19,7 @@ from rest_framework.views import APIView
 
 from users.forms import LoginUserForm, RegisterUserForm, ProfileUserForm, MarriageProposalForm
 from users.models import User, Marriage, MarriageProposals
-from users.serializers import MarriageSerializers, OffersSerializers
+from users.serializers import MarriageSerializers, OffersSerializers, DivorceSerializer
 
 
 class HomePage(ListView):
@@ -123,7 +123,6 @@ class ProposalAPI(ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         if response.status_code == status.HTTP_201_CREATED:
-            # Возвращаем JSON для JS (можно кастомизировать)
             return Response({"success": True, "message": "Предложение отправлено!"}, status=status.HTTP_201_CREATED)
         return response
 
@@ -157,6 +156,7 @@ class OffersAPI(
 ):
 
     serializer_class = OffersSerializers
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return MarriageProposals.objects.filter(
@@ -174,95 +174,132 @@ class OffersAPI(
     def perform_update(self, serializer):
         if serializer.instance.receiver != self.request.user:
             raise PermissionDenied("You don't update this offer!")
-        serializer.save()
 
-class OffersHTML(OffersAPI):
-    renderer_classes = [TemplateHTMLRenderer]
+        validated_data = serializer.validated_data
+        instance = serializer.instance
+
+        with transaction.atomic():
+            if (instance.status == MarriageProposals.Status.WAITING and
+                    validated_data.get('status') == MarriageProposals.Status.COMPLETE):
+                if instance.sender.gender == User.Gender.MAN:
+                    Marriage.objects.create(
+                        husband=instance.sender,
+                        wife=instance.receiver,
+                    )
+                else:
+                    Marriage.objects.create(
+                        husband=instance.receiver,
+                        wife=instance.sender,
+                    )
+
+                instance.sender.is_married = True
+                instance.receiver.is_married = True
+                instance.sender.save()
+                instance.receiver.save()
+
+                MarriageProposals.objects.filter(
+                    models.Q(sender=instance.sender) |
+                    models.Q(sender=instance.receiver) |
+                    models.Q(receiver=instance.sender) |
+                    models.Q(receiver=instance.receiver),
+                    status=MarriageProposals.Status.WAITING
+                ).exclude(id=instance.id).update(status=MarriageProposals.Status.CANCELED)
+
+            serializer.save()
+
+class OffersHTML(TemplateView):
     template_name = 'users/offers.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-    def get(self, request, *args, **kwargs):
-        return Response({
-            'offers': self.get_queryset(),
-            'request': request
+        offers = MarriageProposals.objects.filter(
+            receiver=self.request.user,
+            status=MarriageProposals.Status.WAITING)
+
+        choice = MarriageProposals.Status
+
+        context.update({
+            'offers': offers,
+            'request': self.request,
+            'choice': choice
         })
+
+        return context
+
 
 class DivorceAPI(
     mixins.UpdateModelMixin,
     generics.GenericAPIView
 ):
-    def get_object(self):
-        user = self.request.user
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = DivorceSerializer
 
-        marriage = Marriage.objects.filter(
+    def get_queryset(self):
+        user = self.request.user
+        return Marriage.objects.filter(
             (models.Q(husband=user) | models.Q(wife=user)),
             status=Marriage.Status.ACTIVE
-        ).first()
+        )
 
-        if not marriage:
-            raise Http404("Вы не состоите в активном браке")
-        return marriage
+    def get_object(self):
+        queryset = self.get_queryset()
+        if not queryset.exists():
+            raise NotFound("Вы не состоите в активном браке")
+        return queryset.first()
+
+    def perform_update(self, serializer):
+        marriage = serializer.instance
+
+        with transaction.atomic():
+            husband = marriage.husband
+            wife = marriage.wife
+            husband.is_married = False
+            wife.is_married = False
+            husband.save()
+            wife.save()
+
+            marriage.status = Marriage.Status.DIVORCED
+            marriage.save()
 
     def update(self, request, *args, **kwargs):
-        try:
-            with transaction.atomic():
-                marriage = self.get_object()
+        response = super().update(request, *args, **kwargs)
 
-                husband = marriage.husband
-                wife = marriage.wife
-                husband.is_married = False
-                wife.is_married = False
-                husband.save()
-                wife.save()
+        if response.status_code == status.HTTP_200_OK:
+            return Response({"detail": "Брак расторгнут успешно"}, status=status.HTTP_200_OK)
+        return response
 
-                marriage.status = Marriage.Status.DIVORCED
-                marriage.save()
 
-                return Response(
-                    {"detail": "Брак расторгнут успешно"},
-                    status=status.HTTP_200_OK
-                )
-
-        except Http404:
-            return Response(
-                {"detail": "Активный брак не найден"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            return Response(
-                {"detail": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-    def patch(self, request, *args, **kwargs):
-        return self.update(request, *args, **kwargs)
-
-class MarriagesHTML(APIView):
-    renderer_classes = [TemplateHTMLRenderer]
+class MarriagesHTML(TemplateView):
     template_name = 'users/marriages-list.html'
 
-    def get(self, request, *args, **kwargs):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
         marriages = Marriage.objects.filter(
-            models.Q(husband=request.user) | models.Q(wife=request.user))
+            models.Q(husband=self.request.user) | models.Q(wife=self.request.user)
+        )
 
         marriages_data = []
         for marriage in marriages.select_related('husband', 'wife'):
-            partner = marriage.wife if marriage.husband == request.user else marriage.husband
-
-
+            partner = marriage.wife if marriage.husband == self.request.user else marriage.husband
             marriages_data.append({
                 'partner': partner,
                 'start_date': marriage.created_at.strftime("%d.%m.%Y"),
-                'end_date': marriage.updated_at.strftime("%d.%m.%Y")
-                if marriage.status != Marriage.Status.ACTIVE else None,
+                'end_date': marriage.updated_at.strftime(
+                    "%d.%m.%Y") if marriage.status != Marriage.Status.ACTIVE else None,
                 'is_active': marriage.status == Marriage.Status.ACTIVE,
                 'partner_photo': getattr(partner, 'has_photo', '/media/users/default.png')
             })
 
-
         marriages_data.sort(key=lambda x: x['start_date'], reverse=True)
 
-        return Response({
-            'marriages_list': marriages_data,
-            'request': request
+        active_marriage = next((m for m in marriages_data if m['is_active']), None)  # Первый активный (или None)
+        past_marriages = [m for m in marriages_data if not m['is_active']]  # Список прошедших
+
+        context.update({
+            'active_marriage': active_marriage,
+            'past_marriages': past_marriages,
+            'request': self.request
         })
+        return context

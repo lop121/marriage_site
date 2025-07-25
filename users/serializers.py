@@ -56,51 +56,26 @@ class OffersSerializers(ModelSerializer):
             'status': {'required': False}
         }
 
-
-    def update(self, instance, validated_data):
-        if (instance.status == MarriageProposals.Status.WAITING and validated_data.get('status') ==
-                MarriageProposals.Status.COMPLETE):
-            if instance.sender.gender == User.Gender.MAN:
-                Marriage.objects.create(
-                    husband=instance.sender,
-                    wife=instance.receiver,
-                )
-            else:
-                Marriage.objects.create(
-                    husband=instance.receiver,
-                    wife=instance.sender,
-                )
-
-            instance.sender.is_married = True
-            instance.receiver.is_married = True
-            instance.sender.save()
-            instance.receiver.save()
-
-            MarriageProposals.objects.filter(
-                models.Q(sender=instance.sender) |
-                models.Q(sender=instance.receiver) |
-                models.Q(receiver=instance.sender) |
-                models.Q(receiver=instance.receiver),
-                status=MarriageProposals.Status.WAITING
-            ).exclude(id=instance.id).update(status=MarriageProposals.Status.CANCELED)
-
-        return super().update(instance,validated_data)
-
     def validate_status(self, value):
         if value == MarriageProposals.Status.COMPLETE:
             instance = self.instance
 
-            # Отправитель не женат
             if instance.sender.is_married:
                 raise serializers.ValidationError("Отправитель уже в браке")
 
-            # Получатель не женат
             if instance.receiver.is_married:
                 raise serializers.ValidationError("Получатель уже в браке")
 
-            # Заявка ещё не обработана
             if instance.status != MarriageProposals.Status.WAITING:
                 raise serializers.ValidationError("Заявка уже обработана")
 
         return value
 
+class DivorceSerializer(ModelSerializer):
+    class Meta:
+        model = Marriage
+        fields = ['id', 'husband', 'wife', 'status']
+        read_only_fields = ['husband', 'wife']
+
+    def validate(self, data):
+        return data

@@ -33,7 +33,8 @@ class User(AbstractUser):
     @property
     def partner(self):
         marriage = Marriage.objects.filter(
-            models.Q(husband=self) | models.Q(wife=self)
+            models.Q(husband=self) | models.Q(wife=self),
+            status=Marriage.Status.ACTIVE
         ).first()
         if marriage:
             return marriage.display_partner(self)
