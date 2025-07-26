@@ -1,3 +1,4 @@
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser, UserManager
@@ -19,10 +20,10 @@ class User(AbstractUser):
         choices=Gender.choices,
         default=None
     )
-    first_name = models.CharField(max_length=150, blank=False, null=False)
-    last_name = models.CharField(max_length=150, blank=False, null=False)
+    first_name = models.CharField(max_length=150, blank=False, null=False, verbose_name='Имя')
+    last_name = models.CharField(max_length=150, blank=False, null=False, verbose_name='Фамилия')
 
-    photo = models.ImageField(upload_to='photos/%Y/%m/%d/', default=None, blank=True, null=True, verbose_name='Photo')
+    photo = models.ImageField(upload_to='photos/%Y/%m/%d/', default=None, blank=True, null=True, verbose_name='Фото')
 
     objects = UserManager()
     married = MarriedManager()

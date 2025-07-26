@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-<h1>Profile</h1>
+<h1>Профиль</h1>
 
 <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
@@ -17,9 +17,15 @@
     <p><label class="form-label" for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}</p>
     <div class="form-error">{{ f.errors }}</div>
     {% endfor %}
+    {% if is_married %}
+    <p>Статус: В браке c {{ partner_name }}</p>
+    {% else %}
+    <p>Статус: Не состоит в браке</p>
+    {% endif %}
+
 
     <p>
-        <button type="submit">Save</button>
+        <button type="submit">Сохранить</button>
     </p>
 </form>
 

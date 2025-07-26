@@ -32,7 +32,7 @@ class MarriageSerializers(ModelSerializer):
                 data[field] for field in ['last_name', 'first_name']):
             raise serializers.ValidationError("Все поля для нового пользователя должны быть заполнены")
 
-        if 'gender' not in data or data['gender'] is None:
+        if has_fio and ('gender' not in data or data['gender'] is None):
             raise serializers.ValidationError("Пол должен быть указан")
 
         # Validate sender status
@@ -54,10 +54,10 @@ class MarriageSerializers(ModelSerializer):
         try:
             receiver = User.objects.get(username=value)
             if receiver.is_married:
-                raise serializers.ValidationError("This user is already married")
+                raise serializers.ValidationError("Этот пользователь уже в браке")
             return value
         except User.DoesNotExist:
-            raise serializers.ValidationError("User not found")
+            raise serializers.ValidationError("Пользователь не найден")
 
 class OffersSerializers(ModelSerializer):
     class Meta:

@@ -3,20 +3,34 @@
 {% block content %}
 <h1>Ваши предложения</h1>
 
+<h2>Поступившие:</h2>
 <ul>
-    {% for offer in offers %}
+    {% for offer in offers_incoming %}
         <li>
             От: {{ offer.sender.username }} ({{ offer.created_at }})
             <button class="accept-btn" data-id="{{ offer.id }}">Принять</button>
             <button class="reject-btn" data-id="{{ offer.id }}">Отклонить</button>
         </li>
+    {% empty %}
+        <li>Нет поступивших заявок.</li>
+    {% endfor %}
+</ul>
+
+<h2>Отправленные:</h2>
+<ul>
+    {% for offer in offers_outgoing %}
+        <li>
+            Кому: {{ offer.receiver.get_full_name }} ({{ offer.created_at }})
+            <button class="cancel-btn" data-id="{{ offer.id }}">Отменить</button>
+        </li>
+    {% empty %}
+        <li>Нет отправленных заявок.</li>
     {% endfor %}
 </ul>
 
 <div id="result"></div>
 
 <script>
-// Функция для обновления статуса (общая для accept и reject)
 function updateOfferStatus(offerId, newStatus) {
     fetch(`/api/offers/${offerId}/`, {
         method: 'PATCH',
@@ -34,29 +48,34 @@ function updateOfferStatus(offerId, newStatus) {
     })
     .then(data => {
         document.getElementById('result').innerHTML = '<p style="color: green;">Статус обновлён!</p>';
-        setTimeout(() => location.reload(), 2000);
+        setTimeout(() => location.reload(), 1000);
     })
     .catch(error => {
-        let errorMsg = 'Ошибка: ' + (error.detail || JSON.stringify(error));  // Парсит ValidationError
+        let errorMsg = 'Ошибка: ' + (error.detail || JSON.stringify(error));
         document.getElementById('result').innerHTML = '<p style="color: red;">' + errorMsg + '</p>';
     });
 }
 
-// Обработчики для кнопок
+// Для входящих заявок
 document.querySelectorAll('.accept-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         const offerId = this.dataset.id;
         updateOfferStatus(offerId, {{ choice.COMPLETE }});
     });
 });
-
 document.querySelectorAll('.reject-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         const offerId = this.dataset.id;
-        updateOfferStatus(offerId, {{choice.COMPLETE}});
+        updateOfferStatus(offerId, {{ choice.CANCELED }});
+    });
+});
+
+// Для отправленных заявок (отмена)
+document.querySelectorAll('.cancel-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const offerId = this.dataset.id;
+        updateOfferStatus(offerId, {{ choice.CANCELED }});
     });
 });
 </script>
 {% endblock %}
-
-

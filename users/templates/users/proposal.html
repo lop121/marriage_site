@@ -23,10 +23,14 @@
     {{ form.type }}
 
     {% if is_for_registered %}
-        <div>
-            <label>Имя пользователя (если существующий):</label>
-            {{ form.receiver_username }}
-            {% if form.receiver_username.errors %}<p style="color: red;">{{ form.receiver_username.errors }}</p>{% endif %}
+        <div style="position: relative;">
+            <label>Имя или фамилия пользователя:</label>
+            <!-- Скрываем стандартное поле формы -->
+            <input type="hidden" name="receiver_username" id="receiver-username-hidden">
+
+            <!-- Наш input для поиска -->
+            <input type="text" id="user-autocomplete" autocomplete="off" placeholder="Начните вводить имя или фамилию...">
+            <div id="autocomplete-list" style="position: absolute; z-index: 1000; background: #fff; border: 1px solid #ccc;"></div>
         </div>
     {% else %}
         <div>
@@ -84,6 +88,44 @@ document.getElementById('proposal-form').addEventListener('submit', function(eve
         }
         document.getElementById('result').innerHTML = '<p style="color: red;">' + errorMsg + '</p>';
     });
+});
+</script>
+
+<script>
+const input = document.getElementById('user-autocomplete');
+const list = document.getElementById('autocomplete-list');
+const hiddenInput = document.getElementById('receiver-username-hidden');
+
+input.addEventListener('input', function() {
+    const query = this.value;
+    if (query.length < 2) {
+        list.innerHTML = '';
+        return;
+    }
+    fetch(`/api/users/autocomplete/?q=${encodeURIComponent(query)}`)
+        .then(res => res.json())
+        .then(users => {
+            list.innerHTML = '';
+            users.forEach(user => {
+                const item = document.createElement('div');
+                item.style.padding = '5px';
+                item.style.cursor = 'pointer';
+                item.innerHTML = `<b>${user.first_name} ${user.last_name}</b> <small>(${user.username})</small>`;
+                item.addEventListener('click', function() {
+                    input.value = `${user.first_name} ${user.last_name} (${user.username})`;
+                    hiddenInput.value = user.username;  // Сохраняем username в скрытое поле
+                    list.innerHTML = '';
+                });
+                list.appendChild(item);
+            });
+        });
+});
+
+// Скрывать список при клике вне поля
+document.addEventListener('click', function(e) {
+    if (!input.contains(e.target) && !list.contains(e.target)) {
+        list.innerHTML = '';
+    }
 });
 </script>
 {% endblock %}

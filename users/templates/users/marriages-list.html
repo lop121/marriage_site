@@ -11,7 +11,6 @@
       <img src="{{ active_marriage.partner_photo }}" width="50">
       Брак с {{ active_marriage.partner.get_full_name }}
       (с {{ active_marriage.start_date }})
-      [Active]
         *Развестись можно в <a href="{% url 'profile' %}">профиле</a>
     </p>
   </div>
@@ -27,7 +26,6 @@
           <img src="{{ marriage.partner_photo }}" width="50">
           Брак с {{ marriage.partner.get_full_name }}
           ({{ marriage.start_date }} - {{ marriage.end_date }})
-          [Divorced]
         </li>
       {% endfor %}
     </ul>

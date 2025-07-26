@@ -9,25 +9,25 @@ from users.models import User
 
 
 class LoginUserForm(AuthenticationForm):
-    username = forms.CharField(label='Login', widget=forms.TextInput(attrs={"autofocus": True}))
-    password = forms.CharField(label='Password', widget=forms.PasswordInput(attrs={'autocomplete': 'new-password'}))
+    username = forms.CharField(label='Логин', widget=forms.TextInput(attrs={"autofocus": True}))
+    password = forms.CharField(label='Пароль', widget=forms.PasswordInput(attrs={'autocomplete': 'new-password'}))
 
 class RegisterUserForm(UserCreationForm):
 
-    username = forms.CharField(label='Login')
+    username = forms.CharField(label='Логин')
     email = forms.EmailField(
-        label='Email',
+        label='Почта',
         widget=forms.EmailInput(attrs={'placeholder': 'user@example.com'})
     )
     first_name = forms.CharField(max_length=150, required=True)
     last_name = forms.CharField(max_length=150, required=True)
 
     password_attrs = {'autocomplete': 'new-password', 'class': 'form-control'}
-    password1 = forms.CharField(label='Password', widget=forms.PasswordInput(password_attrs))
-    password2 = forms.CharField(label='Confirm Password', widget=forms.PasswordInput(password_attrs))
+    password1 = forms.CharField(label='Пароль', widget=forms.PasswordInput(password_attrs))
+    password2 = forms.CharField(label='Подтверждение пароля', widget=forms.PasswordInput(password_attrs))
 
     gender = forms.ChoiceField(
-        label='Gender',
+        label='Пол',
         choices=User.Gender.choices,
         widget=Select
     )
@@ -43,24 +43,22 @@ class RegisterUserForm(UserCreationForm):
         return email
 
 class ProfileUserForm(forms.ModelForm):
-    username = forms.CharField(label='Login',
+    username = forms.CharField(label='Логин',
                                widget=forms.TextInput(attrs={'class': 'form-input'}), disabled=True)
-    email = forms.CharField(label='E-mail',
+    email = forms.CharField(label='Почта',
                             widget=forms.TextInput(attrs={'class': 'form-input'}), disabled=True)
-    this_year = date.today().year
-    data_birth = forms.DateField(widget=forms.SelectDateWidget(years=tuple(range(this_year - 100, this_year - 18))))
-    is_married = forms.BooleanField(label='Married', disabled=True)
+    gender = forms.ChoiceField(choices=User.Gender.choices,label='Пол')
 
     class Meta:
         model = get_user_model()
-        fields = ['photo','username', 'email', 'first_name', 'last_name', 'data_birth', 'is_married']
+        fields = ['photo','username', 'email', 'first_name', 'last_name', 'gender']
 
 class MarriageProposalForm(forms.Form):
     type = forms.CharField(widget=forms.HiddenInput(),
                            required=False)
-    receiver_username = forms.CharField(required=False, label="Username (login)")
-    first_name = forms.CharField(required=False, label="First name")
-    last_name = forms.CharField(required=False, label="Last name")
+    receiver_username = forms.CharField(required=False, label="Логин")
+    first_name = forms.CharField(required=False, label="Имя")
+    last_name = forms.CharField(required=False, label="Фамилия")
 
     gender_choices = [('', 'Выберите пол')] + list(User.Gender.choices)
     gender = forms.ChoiceField(choices=gender_choices, required=False, label="Пол")

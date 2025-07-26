@@ -74,7 +74,7 @@ class ProposalAPI(ListCreateAPIView):
 
         with transaction.atomic():
             if MarriageProposals.objects.filter(sender=sender, status=MarriageProposals.Status.WAITING).exists():
-                raise serializers.ValidationError("You have already sent an offer")
+                raise serializers.ValidationError("У тебя уже есть отправленное предложение")
 
             if 'receiver_username' in validated_data:
                 # Existing user case
@@ -82,10 +82,10 @@ class ProposalAPI(ListCreateAPIView):
                 receiver = User.objects.get(username=username)
 
                 if sender == receiver:
-                    raise serializers.ValidationError("You can't send it to yourself")
+                    raise serializers.ValidationError("Ты не можешь отправить запрос самому себе")
 
                 if receiver.gender == sender.gender:
-                    raise serializers.ValidationError("You can't send to same-sex user")
+                    raise serializers.ValidationError("Однополые браки запрещены!")
             else:
                 # New user case
                 first_name = validated_data.pop('first_name')
@@ -117,7 +117,6 @@ class ProposalAPI(ListCreateAPIView):
                 sender=sender,
                 receiver=receiver,
                 receiver_fullname=receiver_fullname,
-                status=validated_data.get('status', MarriageProposals.Status.WAITING)
             )
 
     def post(self, request, *args, **kwargs):
@@ -173,9 +172,17 @@ class OffersAPI(
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return MarriageProposals.objects.filter(
+        # Поступившие заявки
+        incoming = MarriageProposals.objects.filter(
             receiver=self.request.user,
-            status=MarriageProposals.Status.WAITING)
+            status=MarriageProposals.Status.WAITING
+        )
+        # Отправленные заявки
+        outgoing = MarriageProposals.objects.filter(
+            sender=self.request.user,
+            status=MarriageProposals.Status.WAITING
+        )
+        return incoming | outgoing
 
     def get(self, request, *args, **kwargs):
         if 'pk' in kwargs:
@@ -186,11 +193,17 @@ class OffersAPI(
         return self.partial_update(request, *args, **kwargs)
 
     def perform_update(self, serializer):
-        if serializer.instance.receiver != self.request.user:
+        instance = serializer.instance
+        validated_data = serializer.validated_data
+
+        user = self.request.user
+
+        # Получатель может принять/отклонить, отправитель — только отменить
+        if user != instance.receiver and user != instance.sender:
             raise PermissionDenied("Ты не можешь изменить эту заявку!")
 
-        validated_data = serializer.validated_data
-        instance = serializer.instance
+        if user == instance.sender and serializer.validated_data.get('status') != MarriageProposals.Status.CANCELED:
+            raise PermissionDenied("Отправитель может только отменить заявку!")
 
         with transaction.atomic():
             if (instance.status == MarriageProposals.Status.WAITING and
@@ -227,14 +240,22 @@ class OffersHTML(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        offers = MarriageProposals.objects.filter(
+        # Полученные
+        incoming = MarriageProposals.objects.filter(
             receiver=self.request.user,
-            status=MarriageProposals.Status.WAITING)
+            status=MarriageProposals.Status.WAITING
+        )
+        # Отправленные заявки
+        outgoing = MarriageProposals.objects.filter(
+            sender=self.request.user,
+            status=MarriageProposals.Status.WAITING
+        )
 
         choice = MarriageProposals.Status
 
         context.update({
-            'offers': offers,
+            'offers_incoming': incoming,
+            'offers_outgoing': outgoing,
             'request': self.request,
             'choice': choice
         })
