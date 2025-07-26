@@ -2,6 +2,7 @@ from django.contrib.auth.views import LogoutView
 from django.urls import path, re_path
 
 from . import views
+from .views import UserAutocompleteView
 
 urlpatterns = [
     path('', views.HomePage.as_view(), name='home'),
@@ -15,6 +16,7 @@ urlpatterns = [
     path('api/offers/<int:pk>/', views.OffersAPI.as_view()),
     path('api/divorce/', views.DivorceAPI.as_view(), name='divorce'),
     path('marriages/', views.MarriagesHTML.as_view(), name='marriages-list'),
+    path('api/users/autocomplete/', UserAutocompleteView.as_view(), name='user-autocomplete'),
 
 
 ]

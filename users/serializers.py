@@ -91,3 +91,8 @@ class DivorceSerializer(ModelSerializer):
 
     def validate(self, data):
         return data
+
+class UserShortSerializer(ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'first_name', 'last_name', 'photo']

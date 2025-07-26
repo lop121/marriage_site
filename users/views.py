@@ -6,15 +6,16 @@ from django.contrib.auth.views import LoginView
 from django.db import models, transaction
 from django.db.models import Q
 from django.urls import reverse_lazy, reverse
-from django.views.generic import ListView, CreateView, UpdateView, TemplateView, DetailView
+from django.views.generic import ListView, CreateView, UpdateView, TemplateView
 from rest_framework import status, mixins, generics, serializers, permissions
 from rest_framework.exceptions import PermissionDenied, NotFound
-from rest_framework.generics import ListCreateAPIView, UpdateAPIView, ListAPIView
+from rest_framework.generics import ListCreateAPIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from users.forms import LoginUserForm, RegisterUserForm, ProfileUserForm, MarriageProposalForm
 from users.models import User, Marriage, MarriageProposals
-from users.serializers import MarriageSerializers, OffersSerializers, DivorceSerializer
+from users.serializers import MarriageSerializers, OffersSerializers, DivorceSerializer, UserShortSerializer
 
 
 class HomePage(ListView):
@@ -124,6 +125,20 @@ class ProposalAPI(ListCreateAPIView):
         if response.status_code == status.HTTP_201_CREATED:
             return Response({"success": True, "message": "Предложение отправлено!"}, status=status.HTTP_201_CREATED)
         return response
+
+class UserAutocompleteView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        q = request.GET.get('q', '')  # Получаем поисковую строку из параметра q
+        users = User.objects.filter(is_married=False)
+        if q:
+            users = users.filter(
+                Q(first_name__icontains=q) | Q(last_name__icontains=q)
+            )
+        users = users[:10]  # Ограничиваем 10 результатами
+        serializer = UserShortSerializer(users, many=True)
+        return Response(serializer.data)
 
 class ProposalHTML(TemplateView):
     template_name = 'users/proposal.html'

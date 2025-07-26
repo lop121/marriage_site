@@ -14,7 +14,7 @@
 <body>
 
 {% block mainmenu %}
-    <h2><a href="{% url 'home' %}">HomePage</a> </h2>
+    <h2><a href="{% url 'home' %}">Главная страница</a> </h2>
 {% if user.is_authenticated %}
 	<li style="float: right">
 		<a href="{% url 'profile' %}"> {{ user.first_name }} </a> |

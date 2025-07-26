@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<p>Hello, shma!</p>
-    <li><a href="{% url 'proposal'%}?type=registered">Send a request to an authorized user</a></li>
-    <li><a href="{% url 'proposal'%}?type=unregistered">Send a request to a NOT authorized user</a></li>
+<p>Добро пожаловать!</p>
+    <li><a href="{% url 'proposal'%}?type=registered">Отправить запрос зарегистрированному пользователю</a></li>
+    <li><a href="{% url 'proposal'%}?type=unregistered">Отправить запрос незарегистрированному пользователю</a></li>
     {% if user.is_authenticated %}
-    <li><a href="{% url 'offers-list'%}">View my offers</a></li>
-    <li><a href="{% url 'marriages-list'%}">View my marriages</a></li>
+    <li><a href="{% url 'offers-list'%}">Предложения</a></li>
+    <li><a href="{% url 'marriages-list'%}">История моих браков</a></li>
     {% endif %}
 {% endblock %}
 

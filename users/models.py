@@ -2,7 +2,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
-from jedi.inference.flow_analysis import Status
 
 
 class MarriedManager(models.Manager):
@@ -12,8 +11,8 @@ class MarriedManager(models.Manager):
 
 class User(AbstractUser):
     class Gender(models.IntegerChoices):
-        MAN = 1,
-        WOMAN = 0
+        MAN = 1, 'Мужской'
+        WOMAN = 0, 'Женский'
 
     is_married = models.BooleanField(default=False, verbose_name='Married')
     gender = models.SmallIntegerField(
@@ -125,5 +124,5 @@ class MarriageProposals(models.Model):
     def display_receiver(self):
         if self.receiver:
             return self.receiver.get_full_name() or self.receiver.username
-        return self.receiver_fullname or "Not found, shma"
+        return self.receiver_fullname or "Партнера не найдено"
 
