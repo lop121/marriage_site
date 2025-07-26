@@ -46,7 +46,7 @@ class UserProfile(LoginRequiredMixin,UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        user = self.request.user
+        user = self.request.user # type: User
 
         context.update({
             'is_married': user.is_married,
