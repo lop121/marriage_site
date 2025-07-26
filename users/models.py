@@ -57,13 +57,13 @@ class User(AbstractUser):
 
 class Marriage(models.Model):
     class Status(models.IntegerChoices):
-        ACTIVE = 1,
-        DIVORCED = 0,
+        ACTIVE = 1, 'Активный'
+        DIVORCED = 0, 'Расторгнут'
 
-    husband = models.ForeignKey('User', on_delete=models.CASCADE, related_name='husband')
-    wife = models.ForeignKey('User', on_delete=models.CASCADE, related_name='wife')
+    husband = models.ForeignKey('User', on_delete=models.CASCADE, related_name='husband', verbose_name='Муж')
+    wife = models.ForeignKey('User', on_delete=models.CASCADE, related_name='wife', verbose_name='Жена')
 
-    status = models.SmallIntegerField(choices=Status.choices, default=Status.ACTIVE,verbose_name='status')
+    status = models.SmallIntegerField(choices=Status.choices, default=Status.ACTIVE,verbose_name='Статус')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
