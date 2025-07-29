@@ -26,7 +26,14 @@
     {% endif %}
 
     <h2 class="text-xl font-bold text-pink-500 mb-4 text-center">Отправить предложение</h2>
-    <form id="proposal-form" method="post" class="space-y-6">
+    {% if not is_for_registered %}
+        <p class="text-sm text-pink-600 bg-pink-50 rounded-lg px-4 py-2 text-center mt-2 shadow-sm">
+        На данный момент заявки не проверяются модерацией и сразу подписываются районным ЗАГСом.<br>
+        Будьте вежливы и без политики на сайте!
+        </p>
+    {% endif %}
+
+    <form id="proposal-form" method="post" class="space-y-6" enctype="multipart/form-data">
         {% csrf_token %}
         {{ form.type }}
 
@@ -60,6 +67,21 @@
                 {{ form.gender|add_class:"w-full px-4 py-2 border border-pink-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" }}
                 {% if form.gender.errors %}
                     <div class="text-pink-500 text-xs mt-1">{{ form.gender.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="flex flex-col items-center mb-6">
+                <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-pink-200 shadow mb-2">
+                    <img id="photoPreview"
+                         src="/media/users/default.png"
+                         alt="Аватар"
+                         class="object-cover w-full h-full">
+                </div>
+                <label class="cursor-pointer bg-pink-100 text-pink-700 px-4 py-2 rounded-lg shadow hover:bg-pink-200 transition mt-2">
+                    Добавить фото человека
+                    <input type="file" name="photo" id="id_photo" accept="image/*" class="hidden">
+                </label>
+                {% if form.photo.errors %}
+                    <div class="text-pink-500 text-xs mt-1">{{ form.photo.errors }}</div>
                 {% endif %}
             </div>
         {% endif %}
@@ -160,6 +182,18 @@ document.getElementById('proposal-form').addEventListener('submit', function(eve
         }
         document.getElementById('result').innerHTML = '<p class="text-red-600">' + errorMsg.trim() + '</p>';
     });
+});
+</script>
+<script>
+document.getElementById('id_photo').addEventListener('change', function(event) {
+    const [file] = event.target.files;
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('photoPreview').src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+    }
 });
 </script>
 {% endblock %}

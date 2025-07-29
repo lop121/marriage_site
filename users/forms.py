@@ -61,3 +61,5 @@ class MarriageProposalForm(forms.Form):
     gender_choices = [('', 'Выберите пол')] + list(User.Gender.choices)
     gender = forms.ChoiceField(choices=gender_choices, required=False, label="Пол")
 
+    photo = forms.ImageField(required=False, label='Фото')
+

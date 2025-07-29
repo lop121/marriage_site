@@ -83,7 +83,11 @@ class ProposalAPI(ListCreateAPIView):
         sender = self.request.user
         validated_data = serializer.validated_data
 
-        receiver = None
+        if 'photo' in self.request.FILES:
+            photo = self.request.FILES['photo']
+        else:
+            photo = None
+
         receiver_fullname = None
 
         with transaction.atomic():
@@ -115,7 +119,8 @@ class ProposalAPI(ListCreateAPIView):
                     first_name=first_name,
                     last_name=last_name,
                     gender=gender,
-                    is_active=True
+                    is_active=True,
+                    photo=photo
                 )
 
                 # For new users, automatically complete the marriage
