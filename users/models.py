@@ -28,7 +28,7 @@ class User(AbstractUser):
     objects = UserManager()
     married = MarriedManager()
 
-    REQUIRED_FIELDS = ['gender', 'first_name', 'last_name']
+    REQUIRED_FIELDS = ['email', 'gender', 'first_name', 'last_name']
 
     @property
     def partner(self):

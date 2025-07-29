@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.db import models, transaction
 from django.db.models import Q
-from django.urls import reverse_lazy, reverse
+from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, TemplateView
 from rest_framework import status, mixins, generics, serializers, permissions
 from rest_framework.exceptions import PermissionDenied, NotFound

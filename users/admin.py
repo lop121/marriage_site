@@ -7,7 +7,17 @@ from .models import User, Marriage, MarriageProposals
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('username', 'get_full_name', 'email', 'gender', 'is_married')
+    list_display_links = ('username',)
+    search_fields = ('username', 'first_name', 'last_name', 'email')
+    list_filter = ('is_married', 'gender')
+    ordering = ('username',)
+    readonly_fields = ('last_login', 'date_joined')
+    list_per_page = 20
+
+    def get_full_name(self, obj):
+        return obj.get_full_name()
+    get_full_name.short_description = 'ФИО'
 
 @admin.register(Marriage)
 class MarriageAdmin(admin.ModelAdmin):
@@ -67,5 +77,10 @@ class MarriageAdmin(admin.ModelAdmin):
 
 @admin.register(MarriageProposals)
 class MarriageProposalAdmin(admin.ModelAdmin):
-    pass
-
+    list_display = ('sender', 'receiver', 'status', 'created_at')
+    list_filter = ('status',)
+    search_fields = ('sender__username', 'receiver__username')
+    ordering = ('-created_at',)
+    list_per_page = 20
+    autocomplete_fields = ['sender', 'receiver']
+    empty_value_display = '—'
