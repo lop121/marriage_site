@@ -1,71 +1,73 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>{{  title }}</title>
-    <style>
-        body {
-            background-color: white !important;
-            margin: 0;
-            padding: 10px;
-        }
-    </style>
+    <title>{{ title }}</title>
+    <!-- Подключаем Tailwind CSS через CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
-<body>
+<body class="min-h-screen bg-gradient-to-br from-pink-100 via-white to-pink-200">
 
-{% block mainmenu %}
-    <h2><a href="{% url 'home' %}">Главная страница</a> </h2>
-{% if user.is_authenticated %}
-	<li style="float: right">
-		<a href="{% url 'profile' %}"> {{ user.first_name }} </a> |
-    <a href="#" onclick="document.getElementById('logoutForm').submit(); return false;">
-        Выйти
-    </a>
-</li>
-{% else %}
-	<li style="float: right"><a href="{% url 'login' %}"> Войти </a> | <a href="
-{% url 'register' %}">Зарегистрироваться</a>
-	</li>
-{% endif %}
-			</ul>
-			<div class="clear"></div>
-		</div>
-{% endblock %}
-
-{% block content %}
-{% endblock %}
-
-{% block information %}
-<ul>
-<h1>Молодожены нашего сайта!</h1>
-<hr>
-    {% for proposal in marriages %}
-      <li>
-        {{ proposal.husband.first_name }} {{ proposal.husband.last_name }}
-          {% if proposal.husband.has_photo %}
-            <img src="{{ proposal.husband.has_photo }}" width="50" height="50">
+    <!-- Навигация -->
+    <nav class="bg-white/80 shadow-md rounded-b-2xl px-6 py-4 flex items-center justify-between mb-8">
+        <div>
+            <a href="{% url 'home' %}" class="text-2xl font-bold text-pink-500 hover:text-pink-700 transition">💍 Сайт браков</a>
+        </div>
+        <ul class="flex items-center gap-4">
+            {% if user.is_authenticated %}
+                <li>
+                    <a href="{% url 'profile' %}" class="text-pink-600 font-semibold hover:underline">{{ user.first_name }}</a>
+                </li>
+                <li>
+                    <a href="#" onclick="document.getElementById('logoutForm').submit(); return false;" class="text-gray-500 hover:text-pink-500 transition">Выйти</a>
+                </li>
             {% else %}
-          <img src="/media/users/default.png" width="50" height="50">
+                <li>
+                    <a href="{% url 'login' %}" class="text-pink-600 font-semibold hover:underline">Войти</a>
+                </li>
+                <li>
+                    <a href="{% url 'register' %}" class="text-pink-600 font-semibold hover:underline">Зарегистрироваться</a>
+                </li>
             {% endif %}
-          +
-          {{ proposal.wife.first_name }} {{ proposal.wife.last_name }}
-          {% if proposal.wife.has_photo %}
-              <img src="{{ proposal.wife.has_photo }}" width="50" height="50">
-          {% else %}
-              <img src="/media/users/default.png" width="50" height="50">
-          {% endif %}
-          = ❤️ (Брак заключен: {{ proposal.created_at|date:"d.m.Y" }})
-      </li>
-    {% empty %}
-      <li>Молодоженов, к сожалению, еще нет</li>
-{% endfor %}
-</ul>
-{% endblock %}
+        </ul>
+    </nav>
 
-<form id="logoutForm" method="post" action="{% url 'logout' %}" style="display:none;">
-    {% csrf_token %}
-</form>
+    <!-- Контент страницы -->
+    <main class="max-w-3xl mx-auto bg-white/80 rounded-2xl shadow-lg p-8 mb-8">
+        {% block content %}
+        {% endblock %}
+    </main>
 
+    <!-- Блок молодожёнов -->
+    <section class="max-w-3xl mx-auto bg-white/70 rounded-2xl shadow p-6 mb-8">
+        <h2 class="text-xl font-bold text-pink-500 mb-4 text-center">Молодожёны нашего сайта!</h2>
+        <hr class="mb-4 border-pink-200">
+        <ul class="space-y-4">
+            {% for proposal in marriages %}
+                <li class="flex items-center justify-between bg-pink-50 rounded-lg p-3 shadow-sm">
+                    <div class="flex items-center gap-2">
+                        <img src="{{ proposal.husband.has_photo|default:'/media/users/default.png' }}" alt="Фото мужа" class="w-10 h-10 rounded-full border-2 border-pink-200 object-cover">
+                        <span class="font-semibold text-pink-700">{{ proposal.husband.first_name }} {{ proposal.husband.last_name }}</span>
+                    </div>
+                    <span class="text-2xl text-pink-400 font-bold">+</span>
+                    <div class="flex items-center gap-2">
+                        <img src="{{ proposal.wife.has_photo|default:'/media/users/default.png' }}" alt="Фото жены" class="w-10 h-10 rounded-full border-2 border-pink-200 object-cover">
+                        <span class="font-semibold text-pink-700">{{ proposal.wife.first_name }} {{ proposal.wife.last_name }}</span>
+                    </div>
+                    <span class="ml-4 text-pink-500 text-lg">❤️</span>
+                    <span class="ml-2 text-gray-500 text-sm">({{ proposal.created_at|date:"d.m.Y" }})</span>
+                </li>
+            {% empty %}
+                <li class="text-center text-gray-400">Молодожёнов, к сожалению, ещё нет</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <!-- Форма выхода (скрытая) -->
+    <form id="logoutForm" method="post" action="{% url 'logout' %}" style="display:none;">
+        {% csrf_token %}
+    </form>
 
 </body>
 </html>

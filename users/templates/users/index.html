@@ -1,12 +1,30 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<p>Добро пожаловать!</p>
-    <li><a href="{% url 'proposal'%}?type=registered">Отправить запрос зарегистрированному пользователю</a></li>
-    <li><a href="{% url 'proposal'%}?type=unregistered">Отправить запрос незарегистрированному пользователю</a></li>
+<div class="flex flex-col items-center justify-center min-h-[60vh]">
+    <h1 class="text-3xl font-bold text-pink-600 mb-8">Добро пожаловать!</h1>
+    <div class="flex flex-col md:flex-row gap-6 mb-8">
+        <!-- Две главные кнопки -->
+        <a href="{% url 'proposal' %}?type=registered"
+           class="bg-gradient-to-r from-pink-400 to-pink-300 text-white text-lg font-semibold px-8 py-4 rounded-xl shadow-lg hover:scale-105 hover:from-pink-500 hover:to-pink-400 transition transform duration-200 text-center">
+            Отправить запрос зарегистрированному пользователю
+        </a>
+        <a href="{% url 'proposal' %}?type=unregistered"
+           class="bg-gradient-to-r from-pink-200 to-pink-400 text-pink-900 text-lg font-semibold px-8 py-4 rounded-xl shadow-lg hover:scale-105 hover:from-pink-300 hover:to-pink-500 transition transform duration-200 text-center">
+            Отправить запрос незарегистрированному пользователю
+        </a>
+    </div>
     {% if user.is_authenticated %}
-    <li><a href="{% url 'offers-list'%}">Предложения</a></li>
-    <li><a href="{% url 'marriages-list'%}">История моих браков</a></li>
+    <div class="flex flex-col md:flex-row gap-4">
+        <a href="{% url 'offers-list' %}"
+           class="bg-white/80 border border-pink-200 text-pink-600 font-medium px-6 py-3 rounded-lg shadow hover:bg-pink-50 hover:text-pink-800 transition text-center">
+            Предложения
+        </a>
+        <a href="{% url 'marriages-list' %}"
+           class="bg-white/80 border border-pink-200 text-pink-600 font-medium px-6 py-3 rounded-lg shadow hover:bg-pink-50 hover:text-pink-800 transition text-center">
+            История моих браков
+        </a>
+    </div>
     {% endif %}
+</div>
 {% endblock %}
-

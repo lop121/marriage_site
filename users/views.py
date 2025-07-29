@@ -5,8 +5,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.db import models, transaction
 from django.db.models import Q
+from django.http import JsonResponse
 from django.urls import reverse_lazy
-from django.views.generic import ListView, CreateView, UpdateView, TemplateView
+from django.views.generic import ListView, CreateView, UpdateView, TemplateView, View
 from rest_framework import status, mixins, generics, serializers, permissions
 from rest_framework.exceptions import PermissionDenied, NotFound
 from rest_framework.generics import ListCreateAPIView
@@ -60,6 +61,14 @@ class UserProfile(LoginRequiredMixin,UpdateView):
 
     def get_object(self, queryset=None):
         return self.request.user
+
+class DeletePhotoView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        if user.photo:
+            user.photo.delete(save=True)
+            return JsonResponse({'success': True})
+        return JsonResponse({'success': False, 'error': 'Нет фото'}, status=400)
 
 class ProposalAPI(ListCreateAPIView):
     queryset = MarriageProposals.objects.all()

@@ -17,8 +17,8 @@ class RegisterUserForm(UserCreationForm):
         label='Почта',
         widget=forms.EmailInput(attrs={'placeholder': 'user@example.com'})
     )
-    first_name = forms.CharField(max_length=150, required=True)
-    last_name = forms.CharField(max_length=150, required=True)
+    first_name = forms.CharField(max_length=150, required=True, label='Имя')
+    last_name = forms.CharField(max_length=150, required=True, label='Фамилия')
 
     password_attrs = {'autocomplete': 'new-password', 'class': 'form-control'}
     password1 = forms.CharField(label='Пароль', widget=forms.PasswordInput(password_attrs))

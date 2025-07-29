@@ -1,42 +1,47 @@
 {% extends 'base.html' %}
-
 {% block content %}
-<h2>История браков</h2>
+<div class="max-w-2xl mx-auto bg-white/90 rounded-2xl shadow-lg p-8 mt-8">
+    <h2 class="text-2xl font-bold text-pink-600 mb-8 text-center">История браков</h2>
 
-<!-- Окошко для активного брака (если есть) -->
-{% if active_marriage %}
-  <div style="border: 1px solid green; padding: 10px; margin-bottom: 20px;">
-    <h3>Активный брак</h3>
-    <p>
-      <img src="{{ active_marriage.partner_photo }}" width="50">
-      Брак с {{ active_marriage.partner.get_full_name }}
-      (с {{ active_marriage.start_date }})
-        *Развестись можно в <a href="{% url 'profile' %}">профиле</a>
-    </p>
-  </div>
-{% endif %}
+    <!-- Активный брак -->
+    {% if active_marriage %}
+      <div class="flex items-center gap-4 bg-green-50 border border-green-200 rounded-xl p-4 mb-8 shadow">
+        <img src="{{ active_marriage.partner_photo }}" alt="Аватар" class="w-14 h-14 rounded-full border-2 border-green-200 object-cover">
+        <div>
+          <h3 class="text-lg font-semibold text-green-700 mb-1">Активный брак</h3>
+          <p class="text-green-800">
+            Брак с <span class="font-semibold">{{ active_marriage.partner.get_full_name }}</span>
+            <span class="text-gray-500 text-sm">(с {{ active_marriage.start_date }})</span>
+          </p>
+          <p class="text-xs text-gray-500 mt-1">
+            *Развестись можно в <a href="{% url 'profile' %}" class="text-pink-500 underline hover:text-pink-700">профиле</a>
+          </p>
+        </div>
+      </div>
+    {% endif %}
 
-<!-- Окошко для прошедших браков -->
-<div style="border: 1px solid gray; padding: 10px;">
-  <h3>Прошедшие браки</h3>
-  {% if past_marriages %}
-    <ul>
-      {% for marriage in past_marriages %}
-        <li>
-          <img src="{{ marriage.partner_photo }}" width="50">
-          Брак с {{ marriage.partner.get_full_name }}
-          ({{ marriage.start_date }} - {{ marriage.end_date }})
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p>Нет прошедших браков.</p>
-  {% endif %}
+    <!-- Прошедшие браки -->
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 shadow">
+      <h3 class="text-lg font-semibold text-gray-700 mb-4">Прошедшие браки</h3>
+      {% if past_marriages %}
+        <ul class="space-y-4">
+          {% for marriage in past_marriages %}
+            <li class="flex items-center gap-4">
+              <img src="{{ marriage.partner_photo }}" alt="Аватар" class="w-12 h-12 rounded-full border-2 border-gray-200 object-cover">
+              <div>
+                <span class="font-semibold text-gray-700">Брак с {{ marriage.partner.get_full_name }}</span>
+                <span class="text-gray-500 text-sm ml-2">({{ marriage.start_date }} - {{ marriage.end_date }})</span>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-gray-400">Нет прошедших браков.</p>
+      {% endif %}
+    </div>
+
+    {% if not active_marriage and not past_marriages %}
+      <p class="text-center text-gray-400 mt-8">У вас ещё нет истории браков.</p>
+    {% endif %}
 </div>
-
-<!-- Если вообще ничего нет -->
-{% if not active_marriage and not past_marriages %}
-  <p>У вас ещё нет истории браков.</p>
-{% endif %}
-
 {% endblock %}

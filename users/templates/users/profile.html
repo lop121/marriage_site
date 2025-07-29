@@ -1,46 +1,85 @@
 {% extends 'base.html' %}
+{% load widget_tweaks %}
 {% block content %}
-<h1>Профиль</h1>
+<div class="max-w-xl mx-auto bg-white/90 rounded-2xl shadow-lg p-8 mt-8">
+    <h1 class="text-2xl font-bold text-pink-600 mb-6 text-center">Профиль</h1>
+    <form method="post" enctype="multipart/form-data" class="space-y-5">
+        {% csrf_token %}
 
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
+        <!-- Кастомный блок для фото -->
+        <div class="flex flex-col items-center mb-6">
+            <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-pink-200 shadow mb-2">
+                <img id="avatarPreview"
+                     src="{% if user.photo %}{{ user.photo.url }}{% else %}/media/users/default.png{% endif %}"
+                     alt="Аватар"
+                     class="object-cover w-full h-full">
+            </div>
+            <span class="text-pink-500 text-sm mb-2">Измени фото, чтобы выделиться!</span>
+            <label class="cursor-pointer bg-pink-100 text-pink-700 px-4 py-2 rounded-lg shadow hover:bg-pink-200 transition mt-2">
+                Изменить фото
+                <input type="file" name="photo" id="id_photo" accept="image/*" class="hidden">
+            </label>
+            {% if user.photo %}
+                <button type="button" id="deletePhotoBtn"
+                        class="mt-2 bg-red-100 text-red-600 px-4 py-2 rounded-lg shadow hover:bg-red-200 transition">
+                    Удалить фото
+                </button>
+            {% endif %}
+            {% if form.photo.errors %}
+                <div class="text-pink-500 text-xs mt-1">{{ form.photo.errors }}</div>
+            {% endif %}
+        </div>
 
-    {% if user.photo %}
-    <p><img src="{{ user.photo.url }}" style="width: 300px; height: 300px;"></p>
-    {% else %}
-    <p><img src="/media/users/default.png" style="width: 300px; height: 300px"></p>
-    {% endif %}
+        <!-- Остальные поля формы -->
+        {% for f in form %}
+            {% if f.name != "photo" %}
+                <div>
+                    <label for="{{ f.id_for_label }}" class="block text-pink-700 font-medium mb-1">{{ f.label }}</label>
+                    {{ f|add_class:"w-full px-4 py-2 border border-pink-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" }}
+                    {% if f.errors %}
+                        <div class="text-pink-500 text-xs mt-1">{{ f.errors }}</div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% endfor %}
 
-    <input type="hidden" name="next" value="{{ next }}"/>
-    <div class="form-error">{{form.non_field_errors}}</div>
-    {% for f in form %}
-    <p><label class="form-label" for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}</p>
-    <div class="form-error">{{ f.errors }}</div>
-    {% endfor %}
+        <div class="mb-4">
+            {% if is_married %}
+                <span class="inline-block bg-pink-100 text-pink-700 px-4 py-2 rounded-full font-semibold">
+                    💍 В браке с {{ partner_name }}
+                </span>
+            {% else %}
+                <span class="inline-block bg-gray-100 text-gray-600 px-4 py-2 rounded-full font-semibold">
+                    Не состоит в браке
+                </span>
+            {% endif %}
+        </div>
+
+        <div class="flex justify-center">
+            <button type="submit"
+                class="bg-gradient-to-r from-pink-400 to-pink-300 text-white font-semibold px-8 py-2 rounded-xl shadow hover:scale-105 hover:from-pink-500 hover:to-pink-400 transition transform duration-200">
+                Сохранить
+            </button>
+        </div>
+    </form>
+
     {% if is_married %}
-    <p>Статус: В браке c {{ partner_name }}</p>
-    {% else %}
-    <p>Статус: Не состоит в браке</p>
+        <div class="mt-8 text-center">
+            <button id="initiateDivorceBtn"
+                class="bg-pink-100 text-pink-700 font-semibold px-6 py-2 rounded-lg shadow hover:bg-pink-200 transition">
+                Развестись
+            </button>
+            <div id="result" class="mt-4"></div>
+            <div id="confirmationBlock" class="mt-4" style="display: none;">
+                <p class="mb-2">Вы уверены, что хотите развестись с {{ partner_name }}?</p>
+                <button id="confirmDivorceBtn"
+                    class="bg-pink-500 text-white px-4 py-2 rounded-lg mr-2 hover:bg-pink-600 transition">Да</button>
+                <button id="cancelDivorceBtn"
+                    class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 transition">Нет</button>
+            </div>
+        </div>
     {% endif %}
-
-
-    <p>
-        <button type="submit">Сохранить</button>
-    </p>
-</form>
-
-{% if is_married %}
-    <p>Твой супруг(а) - {{ partner_name }}</p>
-
-    <button id="initiateDivorceBtn" class="divorce-btn">Divorce</button>
-    <div id="result"></div>
-
-    <div id="confirmationBlock" style="display: none; margin-top: 10px;">
-        <p>Вы уверены, что хотите развестись с {{ partner_name }}?</p>
-        <button id="confirmDivorceBtn" class="confirm-btn" style="background: #ff6a6a;">Да</button>
-        <button id="cancelDivorceBtn" class="confirm-btn" style="background: #7d8891;">Нет</button>
-    </div>
-{% endif %}
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -67,47 +106,78 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Обработка подтверждения развода
     if (confirmBtn) {
-    confirmBtn.addEventListener('click', async function() {
-        try {
-            const response = await fetch("{% url 'divorce' %}", {
-                method: 'PATCH',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json',
-                },
-            });
+        confirmBtn.addEventListener('click', async function() {
+            try {
+                const response = await fetch("{% url 'divorce' %}", {
+                    method: 'PATCH',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json',
+                    },
+                });
 
-            const data = await response.json();
+                const data = await response.json();
 
-            if (response.ok) {
-                // Показываем сообщение успеха в #result
-                document.getElementById('result').innerHTML = '<p style="color: green;">' + (data.detail || "Брак успешно расторгнут") + '</p>';
-
-                // Редирект с задержкой (чтобы увидеть сообщение)
-                setTimeout(() => {
-                    window.location.href = "{% url 'profile' %}";
-                }, 2000);  // 2 секунды
-            } else {
-                // Ошибка: Показываем в #result вместо alert
-                document.getElementById('result').innerHTML = '<p style="color: red;">Ошибка: ' + (data.detail || "Не удалось расторгнуть брак") + '</p>';
-
+                if (response.ok) {
+                    document.getElementById('result').innerHTML = '<p class="text-green-600">' + (data.detail || "Брак успешно расторгнут") + '</p>';
+                    setTimeout(() => {
+                        window.location.href = "{% url 'profile' %}";
+                    }, 2000);
+                } else {
+                    document.getElementById('result').innerHTML = '<p class="text-red-600">Ошибка: ' + (data.detail || "Не удалось расторгнуть брак") + '</p>';
+                    if (initiateBtn && confirmationBlock) {
+                        initiateBtn.style.display = 'inline-block';
+                        confirmationBlock.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<p class="text-red-600">Ошибка запроса: ' + error + '</p>';
                 if (initiateBtn && confirmationBlock) {
                     initiateBtn.style.display = 'inline-block';
                     confirmationBlock.style.display = 'none';
                 }
             }
-        } catch (error) {
-            document.getElementById('result').innerHTML = '<p style="color: red;">Ошибка запроса: ' + error + '</p>';
-            if (initiateBtn && confirmationBlock) {
-                initiateBtn.style.display = 'inline-block';
-                confirmationBlock.style.display = 'none';
-            }
-        }
-    });
+        });
     }
 });
 </script>
-
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteBtn = document.getElementById('deletePhotoBtn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', async function() {
+            if (!confirm('Вы уверены, что хотите удалить фото?')) return;
+            try {
+                const response = await fetch("{% url 'delete_photo' %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json',
+                    },
+                });
+                if (response.ok) {
+                    document.getElementById('avatarPreview').src = '/media/users/default.png';
+                    deleteBtn.style.display = 'none';
+                } else {
+                    alert('Ошибка при удалении фото');
+                }
+            } catch (error) {
+                alert('Ошибка запроса: ' + error);
+            }
+        });
+    }
+});
+</script>
+<script>
+document.getElementById('id_photo').addEventListener('change', function(event) {
+    const [file] = event.target.files;
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('avatarPreview').src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+    }
+});
+</script>
 {% endblock %}
-
-

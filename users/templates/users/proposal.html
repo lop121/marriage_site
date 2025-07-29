@@ -1,81 +1,101 @@
 {% extends 'base.html' %}
-
+{% load widget_tweaks %}
 {% block content %}
-{% if is_for_registered %}
-    <h1>Для зарегистрированных пользователей</h1>
-    <hr>
-    <h2>Список свободных:</h2>
-    <ul>
-    {% for user in free_users %}
-            <li>{{ user.get_full_name }} (Login: {{ user.username }})</li>
-    {% endfor %}
-</ul>
-{% else %}
-    <p>Для незарегистрированных</p>
-{% endif %}
-    <hr>
-
-<h2>Отправить предложение</h2>
-<form id="proposal-form" method="post">
-    {% csrf_token %}
-
-    <!-- Скрытое поле type (для JS/redirect) -->
-    {{ form.type }}
-
+<div class="max-w-2xl mx-auto bg-white/90 rounded-2xl shadow-lg p-8 mt-8">
     {% if is_for_registered %}
-        <div style="position: relative;">
-            <label>Имя или фамилия пользователя:</label>
-            <!-- Скрываем стандартное поле формы -->
-            <input type="hidden" name="receiver_username" id="receiver-username-hidden">
-
-            <!-- Наш input для поиска -->
-            <input type="text" id="user-autocomplete" autocomplete="off" placeholder="Начните вводить имя или фамилию...">
-            <div id="autocomplete-list" style="position: absolute; z-index: 1000; background: #fff; border: 1px solid #ccc;"></div>
-        </div>
+        <h1 class="text-2xl font-bold text-pink-600 mb-4 text-center">Для зарегистрированных пользователей</h1>
+        <hr class="mb-6 border-pink-200">
+        <h2 class="text-lg font-semibold text-pink-500 mb-2">Список свободных:</h2>
+        <ul class="mb-8 space-y-2">
+            {% for user in free_users %}
+                <li class="bg-pink-50 rounded px-4 py-2 text-pink-700 shadow-sm">
+                    {{ user.get_full_name }} <span class="text-gray-400 text-sm">(Login: {{ user.username }})</span>
+                </li>
+            {% empty %}
+                <li class="text-gray-400">Нет свободных пользователей</li>
+            {% endfor %}
+        </ul>
     {% else %}
-        <div>
-            <label>Имя (для нового пользователя):</label>
-            {{ form.first_name }}
-            {% if form.first_name.errors %}<p style="color: red;">{{ form.first_name.errors }}</p>{% endif %}
-        </div>
-        <div>
-            <label>Фамилия (для нового пользователя):</label>
-            {{ form.last_name }}
-            {% if form.last_name.errors %}<p style="color: red;">{{ form.last_name.errors }}</p>{% endif %}
-        </div>
-        <div>
-            <label>Пол (для нового пользователя):</label>
-            {{ form.gender }}
-            {% if form.gender.errors %}<p style="color: red;">{{ form.gender.errors }}</p>{% endif %}
-        </div>
+        <h1 class="text-2xl font-bold text-pink-600 mb-4 text-center">Для незарегистрированных пользователей</h1>
+        <hr class="mb-6 border-pink-200">
     {% endif %}
 
-    <button type="submit">Отправить</button>
-</form>
+    <h2 class="text-xl font-bold text-pink-500 mb-4 text-center">Отправить предложение</h2>
+    {% if not is_for_registered %}
+        <p class="text-sm text-pink-600 bg-pink-50 rounded-lg px-4 py-2 text-center mt-2 shadow-sm">
+            На данный момент заявки не проверяются модерацией и сразу подписываются районным ЗАГСом.<br>
+            Будьте вежливы и без политики на сайте!
+        </p>
+    {% endif %}
+    <form id="proposal-form" method="post" class="space-y-6">
+        {% csrf_token %}
+        {{ form.type }}
 
-<div id="result"></div>  <!-- Для сообщений -->
+        {% if is_for_registered %}
+            <div class="relative mb-4">
+                <label class="block text-pink-700 font-medium mb-1">Имя или фамилия пользователя:</label>
+                <input type="hidden" name="receiver_username" id="receiver-username-hidden">
+                <input type="text" id="user-autocomplete" autocomplete="off"
+                       placeholder="Начните вводить имя или фамилию..."
+                       class="w-full px-4 py-2 border border-pink-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300">
+                <div id="autocomplete-list"
+                     class="absolute left-0 right-0 bg-white border border-pink-200 rounded-b-lg shadow z-10"></div>
+            </div>
+        {% else %}
+            <div>
+                <label class="block text-pink-700 font-medium mb-1">Имя (для нового пользователя):</label>
+                {{ form.first_name|add_class:"w-full px-4 py-2 border border-pink-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" }}
+                {% if form.first_name.errors %}
+                    <div class="text-pink-500 text-xs mt-1">{{ form.first_name.errors }}</div>
+                {% endif %}
+            </div>
+            <div>
+                <label class="block text-pink-700 font-medium mb-1">Фамилия (для нового пользователя):</label>
+                {{ form.last_name|add_class:"w-full px-4 py-2 border border-pink-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" }}
+                {% if form.last_name.errors %}
+                    <div class="text-pink-500 text-xs mt-1">{{ form.last_name.errors }}</div>
+                {% endif %}
+            </div>
+            <div>
+                <label class="block text-pink-700 font-medium mb-1">Пол (для нового пользователя):</label>
+                {{ form.gender|add_class:"w-full px-4 py-2 border border-pink-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-300" }}
+                {% if form.gender.errors %}
+                    <div class="text-pink-500 text-xs mt-1">{{ form.gender.errors }}</div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <div class="flex justify-center">
+            <button type="submit"
+                class="bg-gradient-to-r from-pink-400 to-pink-300 text-white font-semibold px-8 py-2 rounded-xl shadow hover:scale-105 hover:from-pink-500 hover:to-pink-400 transition transform duration-200">
+                Сделать предложение!
+            </button>
+        </div>
+    </form>
+
+    <div id="result" class="mt-4 text-center"></div>
+</div>
 
 <script>
 document.getElementById('proposal-form').addEventListener('submit', function(event) {
     event.preventDefault();
     const formData = new FormData(this);
 
-    fetch('/api/proposal/', {  // Отправка на DRF API
+    fetch('/api/proposal/', {
         method: 'POST',
         body: formData,
         headers: { 'X-CSRFToken': '{{ csrf_token }}' }
     })
     .then(response => {
-        if (!response.ok) {  // Если 400 (ValidationError)
+        if (!response.ok) {
             return response.json().then(err => { throw err; });
         }
         return response.json();
     })
     .then(data => {
-        document.getElementById('result').innerHTML = '<p style="color: green;">' + data.message + '</p>';
-        // Redirect или reload после успеха
+        document.getElementById('result').innerHTML = '<p class="text-green-600">' + data.message + '</p>';
         const proposalType = document.querySelector('input[name="type"]').value || 'registered';
-        setTimeout(() => window.location.href = `/proposal/?type=${proposalType}`, 2000);  // Имитация redirect
+        setTimeout(() => window.location.href = `/proposal/?type=${proposalType}`, 2000);
     })
     .catch(error => {
         let errorMsg = 'Ошибка: ';
@@ -84,9 +104,9 @@ document.getElementById('proposal-form').addEventListener('submit', function(eve
         } else if (error.receiver_username) {
             errorMsg += error.receiver_username.join(', ');
         } else {
-            errorMsg += JSON.stringify(error);  // Общие ошибки
+            errorMsg += JSON.stringify(error);
         }
-        document.getElementById('result').innerHTML = '<p style="color: red;">' + errorMsg + '</p>';
+        document.getElementById('result').innerHTML = '<p class="text-red-600">' + errorMsg + '</p>';
     });
 });
 </script>
@@ -96,37 +116,36 @@ const input = document.getElementById('user-autocomplete');
 const list = document.getElementById('autocomplete-list');
 const hiddenInput = document.getElementById('receiver-username-hidden');
 
-input.addEventListener('input', function() {
-    const query = this.value;
-    if (query.length < 2) {
-        list.innerHTML = '';
-        return;
-    }
-    fetch(`/api/users/autocomplete/?q=${encodeURIComponent(query)}`)
-        .then(res => res.json())
-        .then(users => {
+if (input) {
+    input.addEventListener('input', function() {
+        const query = this.value;
+        if (query.length < 2) {
             list.innerHTML = '';
-            users.forEach(user => {
-                const item = document.createElement('div');
-                item.style.padding = '5px';
-                item.style.cursor = 'pointer';
-                item.innerHTML = `<b>${user.first_name} ${user.last_name}</b> <small>(${user.username})</small>`;
-                item.addEventListener('click', function() {
-                    input.value = `${user.first_name} ${user.last_name} (${user.username})`;
-                    hiddenInput.value = user.username;  // Сохраняем username в скрытое поле
-                    list.innerHTML = '';
+            return;
+        }
+        fetch(`/api/users/autocomplete/?q=${encodeURIComponent(query)}`)
+            .then(res => res.json())
+            .then(users => {
+                list.innerHTML = '';
+                users.forEach(user => {
+                    const item = document.createElement('div');
+                    item.className = "px-4 py-2 cursor-pointer hover:bg-pink-100";
+                    item.innerHTML = `<b>${user.first_name} ${user.last_name}</b> <small>(${user.username})</small>`;
+                    item.addEventListener('click', function() {
+                        input.value = `${user.first_name} ${user.last_name} (${user.username})`;
+                        hiddenInput.value = user.username;
+                        list.innerHTML = '';
+                    });
+                    list.appendChild(item);
                 });
-                list.appendChild(item);
             });
-        });
-});
+    });
 
-// Скрывать список при клике вне поля
-document.addEventListener('click', function(e) {
-    if (!input.contains(e.target) && !list.contains(e.target)) {
-        list.innerHTML = '';
-    }
-});
+    document.addEventListener('click', function(e) {
+        if (!input.contains(e.target) && !list.contains(e.target)) {
+            list.innerHTML = '';
+        }
+    });
+}
 </script>
 {% endblock %}
-
