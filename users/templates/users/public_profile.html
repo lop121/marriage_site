@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white/90 rounded-2xl shadow-lg p-8 mt-8 text-center">
+    <div class="flex flex-col items-center mb-6">
+        <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-pink-200 shadow mb-2">
+            {% if profile_user.photo %}
+                <img src="{{ profile_user.photo.url }}" alt="Аватар" class="object-cover w-full h-full">
+            {% else %}
+                <img src="/media/users/default.png" alt="Аватар" class="object-cover w-full h-full">
+            {% endif %}
+        </div>
+        <h2 class="text-2xl font-bold text-pink-600 mb-2">{{ profile_user.first_name }} {{ profile_user.last_name }}</h2>
+        <p class="text-pink-500 mb-2">Пол: {{ profile_user.get_gender_display }}</p>
+        {% if profile_user.is_married and profile_user.active_marriage %}
+            <div class="bg-green-50 border border-green-200 rounded-xl p-4 mt-4 shadow">
+                <h3 class="text-lg font-semibold text-green-700 mb-1">В браке</h3>
+                <p class="text-green-800">
+                    С
+                    {% with marriage=profile_user.active_marriage %}
+                        {% if marriage.husband == profile_user %}
+                            {{ marriage.wife.get_full_name }}
+                        {% else %}
+                            {{ marriage.husband.get_full_name }}
+                        {% endif %}
+                        <span class="text-gray-500 text-sm">
+                            (с {{ marriage.created_at|date:"d.m.Y" }})
+                        </span>
+                    {% endwith %}
+                </p>
+            </div>
+        {% else %}
+            <span class="inline-block bg-gray-100 text-gray-600 px-4 py-2 rounded-full font-semibold mt-4">
+                Не состоит в браке
+            </span>
+        {% endif %}
+        {% if not profile_user.is_married and user.is_authenticated and user != profile_user %}
+            <form id="proposal-form" class="mt-6 flex justify-center">
+                <input type="hidden" name="receiver_username" value="{{ profile_user.username }}">
+                <button type="submit"
+                    class="bg-gradient-to-r from-pink-400 to-pink-300 text-white font-semibold px-8 py-2 rounded-xl shadow hover:scale-105 hover:from-pink-500 hover:to-pink-400 transition transform duration-200">
+                    Сделать предложение
+                </button>
+            </form>
+            <div id="result" class="mt-4 text-center"></div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('proposal-form');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(form);
+
+            fetch('/api/proposal/', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('result').innerHTML = '<p class="text-green-600">' + data.message + '</p>';
+                form.style.display = 'none';
+                setTimeout(() => window.location.reload(), 2000);
+            })
+            .catch(error => {
+                let errorMsg = 'Ошибка: ';
+                if (Array.isArray(error)) {
+                    // Просто массив ошибок
+                    errorMsg += error.join(', ');
+                } else if (typeof error === 'object' && error !== null) {
+                    // Объект с полями ошибок
+                    for (let key in error) {
+                        let errs = error[key];
+                        if (Array.isArray(errs)) {
+                            errs = errs.flat();
+                            errorMsg += errs.join(', ') + ' ';
+                        } else {
+                            errorMsg += errs + ' ';
+                        }
+                    }
+                } else {
+                    errorMsg += error;
+                }
+                document.getElementById('result').innerHTML = '<p class="text-red-600">' + errorMsg.trim() + '</p>';
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

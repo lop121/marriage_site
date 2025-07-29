@@ -8,8 +8,13 @@
         <h2 class="text-lg font-semibold text-pink-500 mb-2">Список свободных:</h2>
         <ul class="mb-8 space-y-2">
             {% for user in free_users %}
-                <li class="bg-pink-50 rounded px-4 py-2 text-pink-700 shadow-sm">
-                    {{ user.get_full_name }} <span class="text-gray-400 text-sm">(Login: {{ user.username }})</span>
+                <li class="flex items-center gap-3 bg-pink-50 rounded px-4 py-2 text-pink-700 shadow-sm">
+                    <a href="{% url 'public_profile' user.pk %}" class="flex items-center gap-2 group">
+                        <img src="{% if user.photo %}{{ user.photo.url }}{% else %}/media/users/default.png{% endif %}"
+                             alt="Аватар"
+                             class="w-8 h-8 rounded-full border-2 border-pink-200 object-cover group-hover:border-pink-400 transition">
+                        <span class="font-semibold group-hover:underline">{{ user.get_full_name }}</span>
+                    </a>
                 </li>
             {% empty %}
                 <li class="text-gray-400">Нет свободных пользователей</li>
@@ -21,12 +26,6 @@
     {% endif %}
 
     <h2 class="text-xl font-bold text-pink-500 mb-4 text-center">Отправить предложение</h2>
-    {% if not is_for_registered %}
-        <p class="text-sm text-pink-600 bg-pink-50 rounded-lg px-4 py-2 text-center mt-2 shadow-sm">
-            На данный момент заявки не проверяются модерацией и сразу подписываются районным ЗАГСом.<br>
-            Будьте вежливы и без политики на сайте!
-        </p>
-    {% endif %}
     <form id="proposal-form" method="post" class="space-y-6">
         {% csrf_token %}
         {{ form.type }}
@@ -68,13 +67,56 @@
         <div class="flex justify-center">
             <button type="submit"
                 class="bg-gradient-to-r from-pink-400 to-pink-300 text-white font-semibold px-8 py-2 rounded-xl shadow hover:scale-105 hover:from-pink-500 hover:to-pink-400 transition transform duration-200">
-                Сделать предложение!
+                Отправить
             </button>
         </div>
     </form>
 
     <div id="result" class="mt-4 text-center"></div>
 </div>
+
+<script>
+const input = document.getElementById('user-autocomplete');
+const list = document.getElementById('autocomplete-list');
+const hiddenInput = document.getElementById('receiver-username-hidden');
+
+if (input) {
+    input.addEventListener('input', function() {
+        const query = this.value;
+        if (query.length < 2) {
+            list.innerHTML = '';
+            return;
+        }
+        fetch(`/api/users/autocomplete/?q=${encodeURIComponent(query)}`)
+            .then(res => res.json())
+            .then(users => {
+                list.innerHTML = '';
+                users.forEach(user => {
+                    const item = document.createElement('div');
+                    item.className = "flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-pink-100";
+                    item.innerHTML = `
+                        <img src="${user.photo ? user.photo : '/media/users/default.png'}"
+                             alt="Аватар"
+                             class="w-7 h-7 rounded-full border-2 border-pink-200 object-cover">
+                        <span class="font-semibold">${user.first_name} ${user.last_name}</span>
+                    `;
+                    item.addEventListener('click', function() {
+                        input.value = `${user.first_name} ${user.last_name}`;
+                        hiddenInput.value = user.username;
+                        list.innerHTML = '';
+                    });
+                    list.appendChild(item);
+                });
+            });
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!input.contains(e.target) && !list.contains(e.target)) {
+            list.innerHTML = '';
+        }
+    });
+}
+</script>
 
 <script>
 document.getElementById('proposal-form').addEventListener('submit', function(event) {
@@ -99,53 +141,25 @@ document.getElementById('proposal-form').addEventListener('submit', function(eve
     })
     .catch(error => {
         let errorMsg = 'Ошибка: ';
-        if (error.non_field_errors) {
-            errorMsg += error.non_field_errors.join(', ');
-        } else if (error.receiver_username) {
-            errorMsg += error.receiver_username.join(', ');
+        if (Array.isArray(error)) {
+            // Просто массив ошибок
+            errorMsg += error.join(', ');
+        } else if (typeof error === 'object' && error !== null) {
+            // Объект с полями ошибок
+            for (let key in error) {
+                let errs = error[key];
+                if (Array.isArray(errs)) {
+                    errs = errs.flat();
+                    errorMsg += errs.join(', ') + ' ';
+                } else {
+                    errorMsg += errs + ' ';
+                }
+            }
         } else {
-            errorMsg += JSON.stringify(error);
+            errorMsg += error;
         }
-        document.getElementById('result').innerHTML = '<p class="text-red-600">' + errorMsg + '</p>';
+        document.getElementById('result').innerHTML = '<p class="text-red-600">' + errorMsg.trim() + '</p>';
     });
 });
-</script>
-
-<script>
-const input = document.getElementById('user-autocomplete');
-const list = document.getElementById('autocomplete-list');
-const hiddenInput = document.getElementById('receiver-username-hidden');
-
-if (input) {
-    input.addEventListener('input', function() {
-        const query = this.value;
-        if (query.length < 2) {
-            list.innerHTML = '';
-            return;
-        }
-        fetch(`/api/users/autocomplete/?q=${encodeURIComponent(query)}`)
-            .then(res => res.json())
-            .then(users => {
-                list.innerHTML = '';
-                users.forEach(user => {
-                    const item = document.createElement('div');
-                    item.className = "px-4 py-2 cursor-pointer hover:bg-pink-100";
-                    item.innerHTML = `<b>${user.first_name} ${user.last_name}</b> <small>(${user.username})</small>`;
-                    item.addEventListener('click', function() {
-                        input.value = `${user.first_name} ${user.last_name} (${user.username})`;
-                        hiddenInput.value = user.username;
-                        list.innerHTML = '';
-                    });
-                    list.appendChild(item);
-                });
-            });
-    });
-
-    document.addEventListener('click', function(e) {
-        if (!input.contains(e.target) && !list.contains(e.target)) {
-            list.innerHTML = '';
-        }
-    });
-}
 </script>
 {% endblock %}

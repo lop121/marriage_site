@@ -41,6 +41,11 @@ class User(AbstractUser):
         return None
 
     @property
+    def active_marriage(self):
+        return self.husband.filter(status=Marriage.Status.ACTIVE).first() or \
+            self.wife.filter(status=Marriage.Status.ACTIVE).first()
+
+    @property
     def has_photo(self):
         user = get_user_model().objects.get(pk=self.pk)
         if user.photo:

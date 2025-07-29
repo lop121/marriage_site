@@ -7,7 +7,7 @@ from django.db import models, transaction
 from django.db.models import Q
 from django.http import JsonResponse
 from django.urls import reverse_lazy
-from django.views.generic import ListView, CreateView, UpdateView, TemplateView, View
+from django.views.generic import ListView, CreateView, UpdateView, TemplateView, View, DetailView
 from rest_framework import status, mixins, generics, serializers, permissions
 from rest_framework.exceptions import PermissionDenied, NotFound
 from rest_framework.generics import ListCreateAPIView
@@ -62,6 +62,11 @@ class UserProfile(LoginRequiredMixin,UpdateView):
     def get_object(self, queryset=None):
         return self.request.user
 
+class UserPublicProfileView(DetailView):
+    model = get_user_model()
+    template_name = 'users/public_profile.html'
+    context_object_name = 'profile_user'
+
 class DeletePhotoView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         user = request.user
@@ -103,7 +108,7 @@ class ProposalAPI(ListCreateAPIView):
                 receiver_fullname = f"{first_name} {last_name}".strip()
 
                 if sender.get_full_name() == receiver_fullname:
-                    raise serializers.ValidationError("You can't send it to yourself")
+                    raise serializers.ValidationError("Ты не можешь отправить запрос самому себе")
 
                 receiver = User.objects.create(
                     username=f"user_{uuid.uuid4().hex[:8]}",
