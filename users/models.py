@@ -32,25 +32,26 @@ class User(AbstractUser):
 
     @property
     def partner(self):
-        marriage = Marriage.objects.filter(
-            models.Q(husband=self) | models.Q(wife=self),
-            status=Marriage.Status.ACTIVE
-        ).first()
-        if marriage:
-            return marriage.display_partner(self)
-        return None
+        if not hasattr(self, '_partner'):
+            marriage = self.active_marriage  # Используем уже оптимизированный property
+            if marriage:
+                self._partner = marriage.wife if marriage.husband == self else marriage.husband
+            else:
+                self._partner = None
+        return self._partner
 
     @property
     def active_marriage(self):
-        return self.husband.filter(status=Marriage.Status.ACTIVE).first() or \
-            self.wife.filter(status=Marriage.Status.ACTIVE).first()
+        if not hasattr(self, '_active_marriage'):
+            self._active_marriage = self.husband.filter(status=Marriage.Status.ACTIVE).first() or \
+                                    self.wife.filter(status=Marriage.Status.ACTIVE).first()
+        return self._active_marriage
 
     @property
     def has_photo(self):
-        user = get_user_model().objects.get(pk=self.pk)
-        if user.photo:
+        if self.photo:
             try:
-                return user.photo.url
+                return self.photo.url
             except ValueError:
                 pass
         return f"{settings.MEDIA_URL}users/default.png"
