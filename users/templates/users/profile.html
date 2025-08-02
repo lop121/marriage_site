@@ -47,7 +47,7 @@
             <div class="mb-4">
                 {% if is_married %}
                     <span class="inline-block bg-pink-100 text-pink-700 px-4 py-2 rounded-full font-semibold">
-                    💍 В браке с {{ partner_name }}
+                    💍 В браке с {{ partner_name.get_full_name }}
                 </span>
                 {% else %}
                     <span class="inline-block bg-gray-100 text-gray-600 px-4 py-2 rounded-full font-semibold">
@@ -72,7 +72,7 @@
                 </button>
                 <div id="result" class="mt-4"></div>
                 <div id="confirmationBlock" class="mt-4" style="display: none;">
-                    <p class="mb-2">Вы уверены, что хотите развестись с {{ partner_name }}?</p>
+                    <p class="mb-2">Вы уверены, что хотите развестись с {{ partner_name.get_full_name }}?</p>
                     <button id="confirmDivorceBtn"
                             class="bg-pink-500 text-white px-4 py-2 rounded-lg mr-2 hover:bg-pink-600 transition">Да
                     </button>

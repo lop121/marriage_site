@@ -73,7 +73,7 @@ class DeletePhotoView(LoginRequiredMixin, View):
         return JsonResponse({'success': False, 'error': 'Нет фото'}, status=400)
 
 
-class ProposalHTML(TemplateView):
+class ProposalHTML(LoginRequiredMixin, TemplateView):
     template_name = 'users/proposal.html'
 
     def get_context_data(self, **kwargs):
