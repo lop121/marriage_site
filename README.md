@@ -5,7 +5,7 @@
 ### 1. Клонируй репозиторий
 
 ```bash
-git clone https://github.com/lop121/marriage_site/tree/main
+git clone https://github.com/lop121/marriage_site
 cd marriage_site
 ```
 
